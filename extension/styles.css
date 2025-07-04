@@ -1,1 +1,343 @@
-body { font-family: sans-serif; padding: 10px; }
+:root {
+    --bg-color: #1a1a1a;
+    --text-color: #f0f0f0;
+    --primary-color: #00aaff;
+    --primary-hover: #0088cc;
+    --secondary-color: #4CAF50;
+    --secondary-hover: #45a049;
+    --danger-color: #e63946;
+    --danger-hover: #c9303c;
+    --surface-color: #2a2a2a;
+    --surface-color-light: #3a3a3a;
+    --border-color: #444;
+    --success-color: #2a9d8f;
+    --error-color: var(--danger-color);
+    --running-color: #e9c46a;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+.container {
+    padding: 16px;
+    height: 100%;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+}
+
+.header h1 {
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+button, .button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+}
+
+button:hover, .button:hover {
+    background-color: var(--primary-hover);
+}
+
+button:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+}
+
+.button-secondary {
+    background-color: var(--secondary-color);
+}
+.button-secondary:hover {
+    background-color: var(--secondary-hover);
+}
+
+.button-danger {
+    background-color: var(--danger-color);
+}
+.button-danger:hover {
+    background-color: var(--danger-hover);
+}
+
+.record-button-wrapper {
+    margin-bottom: 16px;
+}
+
+.record-button {
+    width: 100%;
+    padding: 12px;
+}
+
+.recording-status {
+    background-color: var(--danger-color);
+    color: white;
+    text-align: center;
+    padding: 8px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    font-weight: bold;
+}
+
+.scenario-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.scenario-item {
+    background-color: var(--surface-color);
+    padding: 12px;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.scenario-item span {
+    font-weight: 500;
+}
+
+.scenario-item .actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.actions button {
+    font-size: 0.75rem;
+    padding: 6px 8px;
+    background-color: var(--surface-color);
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+}
+
+.actions button:hover {
+     background-color: rgba(0, 170, 255, 0.1);
+}
+
+.actions .delete-btn {
+    border-color: var(--danger-color);
+    color: var(--danger-color);
+}
+.actions .delete-btn:hover {
+    background-color: rgba(230, 57, 70, 0.1);
+}
+
+
+/* Editor Styles */
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.editor-header h2 {
+    font-size: 1.1rem;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 10px;
+}
+
+.run-status {
+    text-align: center;
+    padding: 6px;
+    margin-bottom: 12px;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: background-color 0.3s;
+}
+.run-status.idle { background-color: var(--surface-color-light); }
+.run-status.running { background-color: var(--running-color); color: #1a1a1a; }
+.run-status.success { background-color: var(--success-color); }
+.run-status.error { background-color: var(--error-color); }
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #ccc;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-color);
+    box-sizing: border-box;
+}
+
+.block-list {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 250px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 8px;
+}
+
+.block-list-item {
+    cursor: grab;
+}
+.block-list-item:active {
+    cursor: grabbing;
+}
+
+.block-item-wrapper {
+    background-color: var(--surface-color);
+    border-radius: 4px;
+    margin-bottom: 4px;
+}
+
+.block-item {
+    padding: 8px 10px;
+    font-family: 'SF Mono', 'Courier New', monospace;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    border-left: 4px solid transparent;
+    transition: border-color 0.3s;
+}
+.block-item.status-running { border-left-color: var(--running-color); }
+.block-item.status-success { border-left-color: var(--success-color); }
+.block-item.status-error { border-left-color: var(--error-color); }
+
+.status-icon {
+    font-size: 0.7rem;
+    width: 16px;
+    text-align: center;
+}
+
+.block-item .type {
+    font-weight: bold;
+    color: var(--primary-color);
+    flex-shrink: 0;
+}
+.block-item .details {
+    color: #ddd;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-grow: 1;
+}
+.no-blocks {
+    color: #888;
+    text-align: center;
+    padding: 20px;
+}
+
+.delete-block-btn {
+    background: none;
+    border: none;
+    color: var(--danger-color);
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 0 5px;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+.block-item:hover .delete-block-btn {
+    opacity: 1;
+}
+
+.nested-container {
+    padding-left: 20px;
+}
+.nested-branch {
+    border-left: 2px solid var(--border-color);
+    padding: 4px 8px;
+    margin: 4px 0;
+    background-color: rgba(0,0,0,0.1);
+}
+.nested-branch strong {
+    color: var(--primary-color);
+    font-size: 0.8rem;
+}
+.nested-blocks {
+    padding-left: 10px;
+    font-style: italic;
+    color: #aaa;
+    font-size: 0.8rem;
+}
+
+
+/* Add Step Form */
+.add-step-form {
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 12px;
+    margin-top: 16px;
+}
+
+.add-step-form h4 {
+    margin: 0 0 10px 0;
+    color: #ccc;
+}
+
+.add-step-form .form-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.add-step-form select {
+    flex-grow: 1;
+    padding: 8px;
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-color);
+}
+.add-step-form button {
+    flex-shrink: 0;
+}
+.add-step-form .form-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.add-step-form .form-fields input {
+    width: 100%;
+    padding: 8px;
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-color);
+    box-sizing: border-box;
+    font-size: 0.85rem;
+}
