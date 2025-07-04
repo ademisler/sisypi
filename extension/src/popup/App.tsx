@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import ScenarioList from './components/ScenarioList';
 import ScenarioEditor from './components/ScenarioEditor';
-import { getMessage } from './services/i18n';
 
 type View = 'list' | 'editor';
 
