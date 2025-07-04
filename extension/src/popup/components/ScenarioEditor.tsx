@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import type { Scenario, Block, BlockType, BlockWithStatus, BlockStatus } from '../types';
+import type { Scenario, Block, BlockType, BlockWithStatus } from '../types';
 import { getScenarioById, saveScenario, STORAGE_KEYS } from '../services/storage';
 import { getMessage } from '../services/i18n';
 import BlockItem from './BlockItem';
@@ -198,7 +198,7 @@ const AddBlockForm: React.FC<{onAddBlock: (block: Omit<Block, 'id'>) => void}> =
     };
     
     const handleParamChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value, type, checked } = e.target;
+        const { name, value, type } = e.target;
         setParams(prev => ({ ...prev, [name]: type === 'number' ? parseInt(value, 10) : value }));
     }
 

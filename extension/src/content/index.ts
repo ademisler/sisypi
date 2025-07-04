@@ -2,7 +2,7 @@ import { startRecording, stopRecording } from './recorder';
 
 console.log('Sisypi Content Script Loaded.');
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   switch (message.type) {
     case 'ACTIVATE_RECORDER':
       console.log('Recorder activated by background script.');
