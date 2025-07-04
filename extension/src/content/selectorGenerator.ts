@@ -65,3 +65,4 @@ export function getUniqueSelector(element: HTMLElement): string {
 
   return path;
 }
+

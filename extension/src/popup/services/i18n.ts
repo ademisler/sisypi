@@ -12,3 +12,4 @@ export const getMessage = (key: string, substitutions?: string | string[]): stri
   // Fallback for environments where chrome API is not available (e.g., unit tests)
   return key;
 };
+

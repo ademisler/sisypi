@@ -21,7 +21,7 @@ async function sendStatusUpdate(block: Block, status: BlockWithStatus['status'],
     });
 }
 
-async function executeBlock(state: RunnerState, block: Block): Promise<RunnerState> {
+export async function executeBlock(state: RunnerState, block: Block): Promise<RunnerState> {
   console.log(`Executing block: ${block.type} on tab ${state.tabId}`);
   await sendStatusUpdate(block, 'running');
   
