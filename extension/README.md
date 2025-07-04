@@ -1,14 +1,34 @@
-# Run and deploy your AI Studio app
+# Sisypi Chrome Extension
 
-This contains everything you need to run your app locally.
+This folder contains the source code for the Sisypi visual automation extension.
 
-## Run Locally
-
-**Prerequisites:**  Node.js
-
+## Setup
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+   ```bash
+   npm install
+   ```
+2. Build the extension with Vite:
+   ```bash
+   npm run build
+   ```
+   The compiled files are emitted to the `dist/` folder.
+3. Load the extension in Chrome:
+   - Open `chrome://extensions`
+   - Enable **Developer mode**
+   - Click **Load unpacked** and choose the `dist` directory.
+
+## Development
+
+During development you can run
+```bash
+npm run dev
+```
+to rebuild on changes.
+
+## Tests
+
+Run unit tests with:
+```bash
+npm test
+```

@@ -51,3 +51,4 @@ export interface BlockWithStatus extends Block {
     status: BlockStatus;
     error?: string;
 }
+
