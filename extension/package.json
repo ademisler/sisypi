@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && tsc -p tsconfig.build.json && cp manifest.json dist/ && cp metadata.json dist/ && cp -r icons dist/icons && cp -r _locales dist/_locales",
     "preview": "vite preview",
     "test": "jest"
   },
@@ -16,6 +16,8 @@
   "devDependencies": {
     "@types/jest": "^29.5.5",
     "@types/node": "^22.14.0",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^30.0.4",
     "ts-jest": "^29.1.1",
