@@ -1,0 +1,114 @@
+{
+  "extName": {
+    "message": "Sisypi - Visual Automator",
+    "description": "The name of the extension."
+  },
+  "extDescription": {
+    "message": "Record, edit, and automate your repetitive browser tasks with a simple visual editor.",
+    "description": "The description of the extension."
+  },
+  "newScenario": {
+    "message": "New Scenario",
+    "description": "Button to create a new scenario."
+  },
+  "runScenario": {
+    "message": "Run",
+    "description": "Button to execute a scenario."
+  },
+  "editScenario": {
+    "message": "Edit",
+    "description": "Button to edit a scenario."
+  },
+  "deleteScenario": {
+    "message": "Delete",
+    "description": "Button to delete a scenario."
+  },
+  "startRecording": {
+    "message": "Start Recording",
+    "description": "Button to start recording user actions."
+  },
+  "stopRecording": {
+    "message": "Stop Recording",
+    "description": "Button to stop recording."
+  },
+  "saveScenario": {
+    "message": "Save Scenario",
+    "description": "Button to save the changes in the editor."
+  },
+  "backToList": {
+    "message": "Back to List",
+    "description": "Button to return from the editor to the scenario list."
+  },
+  "scenarioName": {
+    "message": "Scenario Name",
+    "description": "Label for the scenario name input field."
+  },
+  "scenarioEditor": {
+    "message": "Scenario Editor",
+    "description": "Title for the scenario editor view."
+  },
+  "noBlocks": {
+    "message": "No steps recorded yet. Add a step or start recording.",
+    "description": "Message shown when a scenario has no blocks."
+  },
+  "exportScenario": {
+    "message": "Export",
+    "description": "Button to export a scenario as a JSON file."
+  },
+  "importScenario": {
+    "message": "Import Scenario",
+    "description": "Button to import a scenario from a JSON file."
+  },
+  "recordingInProgress": {
+    "message": "Recording in progress...",
+    "description": "Status text shown when recording is active."
+  },
+  "steps": {
+    "message": "Steps",
+    "description": "Header for the list of blocks/steps in the editor."
+  },
+  "addStep": {
+    "message": "Add Step",
+    "description": "Title for the section to add new steps."
+  },
+  "addGoToURLStep": {
+    "message": "Go To URL",
+    "description": "Button to add a 'Go To URL' step."
+  },
+  "addWaitStep": {
+    "message": "Add Wait",
+    "description": "Button to add a 'Wait' step."
+  },
+  "addScrollStep": {
+    "message": "Add Scroll",
+    "description": "Button to add a 'Scroll' step."
+  },
+  "addIfElseBlock": {
+    "message": "Add If/Else",
+    "description": "Button to add a conditional If/Else block."
+  },
+  "addLoopBlock": {
+    "message": "Add Loop",
+    "description": "Button to add a Loop block."
+  },
+  "deleteStep": {
+    "message": "Delete",
+    "description": "Tooltip or label for the delete step button."
+  },
+  "statusIdle": {
+    "message": "Status: Ready",
+    "description": "Status text when the scenario runner is idle."
+  },
+  "statusRunning": {
+    "message": "Status: Running...",
+    "description": "Status text when the scenario is running."
+  },
+  "statusSuccess": {
+    "message": "Status: Completed successfully!",
+    "description": "Status text when the scenario has finished successfully."
+  },
+  "statusError": {
+    "message": "Status: Failed",
+    "description": "Status text when the scenario has failed."
+  }
+}

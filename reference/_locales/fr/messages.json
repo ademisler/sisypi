@@ -1,0 +1,114 @@
+{
+  "extName": {
+    "message": "Sisypi - Automateur Visuel",
+    "description": "Le nom de l'extension."
+  },
+  "extDescription": {
+    "message": "Enregistrez, modifiez et automatisez vos tâches répétitives sur le navigateur avec un simple éditeur visuel.",
+    "description": "La description de l'extension."
+  },
+  "newScenario": {
+    "message": "Nouveau Scénario",
+    "description": "Bouton pour créer un nouveau scénario."
+  },
+  "runScenario": {
+    "message": "Exécuter",
+    "description": "Bouton pour exécuter un scénario."
+  },
+  "editScenario": {
+    "message": "Modifier",
+    "description": "Bouton pour modifier un scénario."
+  },
+  "deleteScenario": {
+    "message": "Supprimer",
+    "description": "Bouton pour supprimer un scénario."
+  },
+  "startRecording": {
+    "message": "Démarrer l'enregistrement",
+    "description": "Bouton pour démarrer l'enregistrement des actions de l'utilisateur."
+  },
+  "stopRecording": {
+    "message": "Arrêter l'enregistrement",
+    "description": "Bouton pour arrêter l'enregistrement."
+  },
+  "saveScenario": {
+    "message": "Sauvegarder le Scénario",
+    "description": "Bouton pour sauvegarder les changements dans l'éditeur."
+  },
+  "backToList": {
+    "message": "Retour à la liste",
+    "description": "Bouton pour retourner de l'éditeur à la liste des scénarios."
+  },
+  "scenarioName": {
+    "message": "Nom du Scénario",
+    "description": "Étiquette pour le champ de saisie du nom du scénario."
+  },
+  "scenarioEditor": {
+    "message": "Éditeur de Scénario",
+    "description": "Titre de la vue de l'éditeur de scénario."
+  },
+  "noBlocks": {
+    "message": "Aucune étape enregistrée. Ajoutez une étape ou démarrez l'enregistrement.",
+    "description": "Message affiché lorsqu'un scénario n'a pas de blocs."
+  },
+  "exportScenario": {
+    "message": "Exporter",
+    "description": "Bouton pour exporter un scénario en tant que fichier JSON."
+  },
+  "importScenario": {
+    "message": "Importer un Scénario",
+    "description": "Bouton pour importer un scénario depuis un fichier JSON."
+  },
+  "recordingInProgress": {
+    "message": "Enregistrement en cours...",
+    "description": "Texte d'état affiché lorsque l'enregistrement est actif."
+  },
+  "steps": {
+    "message": "Étapes",
+    "description": "En-tête de la liste des blocs/étapes dans l'éditeur."
+  },
+  "addStep": {
+    "message": "Ajouter une étape",
+    "description": "Titre de la section pour ajouter de nouvelles étapes."
+  },
+  "addGoToURLStep": {
+    "message": "Aller à l'URL",
+    "description": "Bouton pour ajouter une étape 'Aller à l'URL'."
+  },
+  "addWaitStep": {
+    "message": "Ajouter Attente",
+    "description": "Bouton pour ajouter une étape 'Attente'."
+  },
+  "addScrollStep": {
+    "message": "Ajouter Défilement",
+    "description": "Bouton pour ajouter une étape 'Défilement'."
+  },
+  "addIfElseBlock": {
+    "message": "Ajouter Si/Sinon",
+    "description": "Bouton pour ajouter un bloc conditionnel Si/Sinon."
+  },
+  "addLoopBlock": {
+    "message": "Ajouter Boucle",
+    "description": "Bouton pour ajouter un bloc Boucle."
+  },
+  "deleteStep": {
+    "message": "Supprimer",
+    "description": "Info-bulle ou étiquette pour le bouton de suppression d'étape."
+  },
+  "statusIdle": {
+    "message": "Statut : Prêt",
+    "description": "Texte d'état lorsque l'exécuteur de scénario est inactif."
+  },
+  "statusRunning": {
+    "message": "Statut : En cours...",
+    "description": "Texte d'état lorsque le scénario est en cours d'exécution."
+  },
+  "statusSuccess": {
+    "message": "Statut : Terminé avec succès !",
+    "description": "Texte d'état lorsque le scénario s'est terminé avec succès."
+  },
+  "statusError": {
+    "message": "Statut : Échec",
+    "description": "Texte d'état lorsque le scénario a échoué."
+  }
+}

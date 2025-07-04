@@ -1,0 +1,8 @@
+{
+  "name": "Sisypi - Visual Automation Extension",
+  "description": "A Chrome extension to record, edit, and automate repetitive tasks in the browser using a visual block-based editor.",
+  "version": "1.0.0",
+  "author": "Adem Isler",
+  "repository": "https://github.com/ademisler/sisypi"
+}
+
