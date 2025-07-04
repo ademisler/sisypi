@@ -1,16 +1,32 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>Sisypi</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>Sisypi</h1>
-  <button id="start-recording">⏺️ Kayıt Başlat</button>
-  <button id="stop-recording">⏹️ Durdur</button>
-  <button id="add-wait">⏱️ Wait</button>
-  <button id="add-copy">📋 Copy</button>
-  <ul id="scenario-list"></ul>
+  <div class="container">
+    <header class="header">
+      <h1>Sisypi</h1>
+      <div>
+        <input type="file" id="import-input" style="display:none" accept=".json">
+        <button id="import-btn" class="button-secondary">Import</button>
+        <button id="new-scenario-btn">New Scenario</button>
+      </div>
+    </header>
+    <main>
+      <div class="record-button-wrapper">
+        <div id="recording-status" class="recording-status" style="display:none">Recording...</div>
+        <button id="toggle-recording" class="record-button button-secondary">Start Recording</button>
+        <div style="margin-top:8px;text-align:center;">
+          <button id="add-wait" class="button-secondary" style="margin-right:4px;">⏱️ Wait</button>
+          <button id="add-copy" class="button-secondary">📋 Copy</button>
+        </div>
+      </div>
+      <ul id="scenario-list" class="scenario-list"></ul>
+    </main>
+  </div>
   <script src="storage.js"></script>
   <script src="popup.js"></script>
 </body>
