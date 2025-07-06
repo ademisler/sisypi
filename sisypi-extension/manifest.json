@@ -21,6 +21,7 @@
         "storage",
         "scripting",
         "clipboardWrite"
+        "downloads",
     ],
     "host_permissions": [
         "<all_urls>"

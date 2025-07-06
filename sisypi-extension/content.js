@@ -44,7 +44,13 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             activateSelector();
         }
     } else if (request.action === 'performClick') {
-        const element = document.querySelector(request.selector);
+        let element;
+        try {
+            element = document.querySelector(request.selector);
+        } catch (e) {
+            sendResponse({ success: false, error: 'Invalid selector' });
+            return true;
+        }
         if (element) {
             createExecutionHighlight(element);
             element.click();
@@ -54,7 +60,13 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             sendResponse({ success: false, error: 'Element not found' });
         }
     } else if (request.action === 'performTypeText') {
-        const element = document.querySelector(request.selector);
+        let element;
+        try {
+            element = document.querySelector(request.selector);
+        } catch (e) {
+            sendResponse({ success: false, error: 'Invalid selector' });
+            return true;
+        }
         if (element) {
             createExecutionHighlight(element);
             element.value = request.value;
@@ -66,7 +78,13 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             sendResponse({ success: false, error: 'Element not found' });
         }
     } else if (request.action === 'performCopyText') {
-        const element = document.querySelector(request.selector);
+        let element;
+        try {
+            element = document.querySelector(request.selector);
+        } catch (e) {
+            sendResponse({ success: false, error: 'Invalid selector' });
+            return true;
+        }
         if (element && element.innerText) {
             createExecutionHighlight(element);
             await navigator.clipboard.writeText(element.innerText);
@@ -79,7 +97,13 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         if (request.value === 'bottom') {
             window.scrollTo(0, document.body.scrollHeight);
         } else if (request.value.startsWith('#') || request.value.startsWith('.')) {
-            const element = document.querySelector(request.value);
+            let element;
+            try {
+                element = document.querySelector(request.value);
+            } catch (e) {
+                sendResponse({ success: false, error: 'Invalid selector' });
+                return true;
+            }
             if (element) {
                 element.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
@@ -89,7 +113,14 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         const maxAttempts = 20; // Try for up to 10 seconds (20 * 500ms)
         let attempts = 0;
         const interval = setInterval(() => {
-            const element = document.querySelector(request.selector);
+            let element;
+            try {
+                element = document.querySelector(request.selector);
+            } catch (e) {
+                clearInterval(interval);
+                sendResponse({ success: false, error: 'Invalid selector' });
+                return;
+            }
             if (element) {
                 clearInterval(interval);
                 createExecutionHighlight(element);
@@ -102,6 +133,20 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             attempts++;
         }, 500);
         return true; // Indicate async response
+    } else if (request.action === 'checkElementExists') {
+        let element;
+        try {
+            element = document.querySelector(request.selector);
+        } catch (e) {
+            sendResponse({ success: false, error: 'Invalid selector' });
+            return true;
+        }
+        sendResponse({ success: true, found: !!element });
+        return true;
+    } else if (request.action === 'scenarioError') {
+        alert('Senaryo hatası: ' + request.message);
+        sendResponse({});
+        return true;
     }
 });
 

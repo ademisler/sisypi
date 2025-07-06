@@ -1,0 +1,3 @@
+# Ignore macOS metadata
+.DS_Store
+sisypi-extension/icons/.DS_Store
