@@ -1,0 +1,87 @@
+:root {
+    --primary-color: #6d28d9; --secondary-color: #ede9fe; --background-color: #ffffff;
+    --text-color: #1f2937; --border-color: #d1d5db; --success-color: #10b981;
+    --danger-color: #ef4444; --highlight-color: #db2777; --comment-color: #0ea5e9;
+    --block-color: #f59e0b; --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body {
+    font-family: var(--font-family); background-color: var(--background-color); color: var(--text-color);
+    margin: 0;
+    width: 450px;
+    height: 600px;
+}
+#sisypi-konteyner {
+    width: 100%; height: 100%; background-color: var(--background-color);
+    overflow: hidden; display: flex; flex-direction: column;
+}
+.baslik {
+    padding: 12px 20px; background-color: white; border-bottom: 1px solid var(--border-color);
+    display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+}
+.baslik h1 { font-size: 24px; margin: 0; color: var(--primary-color); font-weight: 700; }
+.baslik .buton-grup { display: flex; gap: 8px; }
+
+.icerik { padding: 20px; overflow-y: auto; flex-grow: 1; }
+.editor-icerik-alani { padding: 20px; flex-grow: 1; overflow-y: auto; }
+.editor-alt-bilgi { padding: 15px 20px; border-top: 1px solid var(--border-color); background-color: #f9fafb; flex-shrink: 0; }
+
+button {
+    font-family: inherit; border: none; border-radius: 8px; padding: 10px 16px; font-size: 14px;
+    font-weight: 600; cursor: pointer; transition: all 0.2s ease; display: inline-flex;
+    align-items: center; justify-content: center; gap: 8px;
+}
+.btn-birincil { background-color: var(--primary-color); color: white; }
+.btn-birincil:hover:not(:disabled) { background-color: #5b21b6; }
+.btn-birincil:disabled { background-color: #a78bfa; cursor: not-allowed; }
+.btn-ikincil { background-color: #e5e7eb; color: #374151; }
+.btn-ikincil:hover { background-color: #d1d5db; }
+.btn-basari { background-color: var(--success-color); color: white; }
+.btn-basari:hover { background-color: #059669; }
+.btn-ikon { background: transparent; padding: 6px; color: #6b7280; }
+.btn-ikon:hover { background: #f3f4f6; color: var(--text-color); }
+.dil-btn { font-size: 12px; padding: 4px 8px; }
+
+.input-alani { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 16px; margin-bottom: 16px; background-color: #f9fafb;}
+#senaryo-adi-input { font-size: 18px; font-weight: 600; }
+#senaryo-url-input { font-size: 14px; font-family: 'Courier New', Courier, monospace; }
+label.input-etiketi { font-size: 12px; font-weight: 500; color: #6b7280; margin-bottom: 4px; display: block; }
+
+#adimlar-konteyner { display: flex; flex-direction: column; gap: 10px; min-height: 100px; }
+.adim-karti { background-color: white; padding: 10px 12px; border-left: 4px solid var(--primary-color); border-radius: 6px; display: flex; align-items: center; gap: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; transition: outline 0.2s; }
+.adim-karti.adim-yorum { border-left-color: var(--comment-color); background-color: #f0f9ff; }
+.adim-karti.adim-blok { border-left-color: var(--block-color); background-color: #fffbeb; font-family: monospace; }
+.adim-karti.girinti-1 { margin-left: 20px; width: calc(100% - 20px); }
+.adim-karti.girinti-2 { margin-left: 40px; width: calc(100% - 40px); }
+.adim-karti.calisiyor { outline: 2px solid var(--primary-color); }
+.adim-karti.hata { outline: 2px solid var(--danger-color); border-left-color: var(--danger-color); }
+
+.adim-karti .tutanak { cursor: grab; color: #9ca3af; padding-right: 4px; }
+.adim-karti .ikon { font-size: 16px; width: 20px; text-align: center; }
+.adim-karti .detaylar { flex-grow: 1; font-size: 14px; word-break: break-word; }
+.adim-karti .detaylar .eylem-degeri { font-size: 13px; color: #4b5563; font-family: 'Courier New', Courier, monospace; background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; }
+.adim-karti .detaylar .degisken-etiketi { background-color: var(--primary-color); color: white; padding: 2px 5px; border-radius: 4px; font-size: 11px; font-weight: 500; font-family: sans-serif; vertical-align: middle; }
+.adim-karti .adim-eylemleri { margin-left: auto; display: flex; gap: 4px; }
+
+#senaryo-listesi .senaryo-karti { display: flex; align-items: center; padding: 16px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; }
+#senaryo-listesi .senaryo-karti:hover { border-color: var(--primary-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+.ana-gorunum-butonlari { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+
+.arac-kutusu-butonlari { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+#calistirma-durum-cubugu { padding: 8px 12px; margin-top: 15px; border-radius: 6px; font-size: 14px; text-align: center; display: none; }
+#calistirma-durum-cubugu.basari { background-color: #dcfce7; color: #166534; }
+#calistirma-durum-cubugu.hata { background-color: #fee2e2; color: #991b1b; }
+#calistirma-durum-cubugu.calisiyor { background-color: #dbeafe; color: #1e40af; }
+
+#eylem-modal-konteyner {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(17, 24, 39, 0.6); display: none; justify-content: center; align-items: center;
+    z-index: 9990; backdrop-filter: blur(4px);
+}
+#eylem-modal { background: white; padding: 24px; border-radius: 12px; width: 400px; }
+#eylem-modal code { background: #f3f4f6; padding: 3px 6px; border-radius: 4px; display: block; white-space: pre-wrap; word-break: break-all; }
+#eylem-secenekleri button.aktif { background-color: var(--secondary-color); border-color: var(--primary-color); color: var(--primary-color); font-weight: 700; }
+.parametre-alani { margin-top: 15px; display: none; }
+.parametre-alani label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 14px; }
+.parametre-alani input { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; }
