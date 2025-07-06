@@ -6,30 +6,42 @@ let selectionTabId = null;
 // Function to execute a single step
 async function executeStep(tabId, step) {
     console.log('Executing step:', step);
+    if (step.type === 'conditional' || step.action === 'Koşullu Adım') {
+        const selector = step.condition || step.selector || step.name;
+        if (selector) {
+            const resp = await chrome.tabs.sendMessage(tabId, { action: 'checkElementExists', selector });
+            if (resp && resp.found && step.nestedSteps) {
+                for (const nested of step.nestedSteps) {
+                    await executeStep(tabId, nested);
+                }
+            }
+        }
+        return;
+    }
     switch (step.action) {
         case 'Tıkla':
-            await chrome.tabs.sendMessage(tabId, { action: 'performClick', selector: step.selector });
+            var resp = await chrome.tabs.sendMessage(tabId, { action: 'performClick', selector: step.selector });
+            if (!resp?.success) throw new Error(resp?.error || 'Click failed');
             break;
         case 'Değer Yaz':
-            await chrome.tabs.sendMessage(tabId, { action: 'performTypeText', selector: step.selector, value: step.value });
+            var resp = await chrome.tabs.sendMessage(tabId, { action: 'performTypeText', selector: step.selector, value: step.value });
+            if (!resp?.success) throw new Error(resp?.error || 'Type failed');
             break;
         case 'Metni Kopyala':
-            await chrome.tabs.sendMessage(tabId, { action: 'performCopyText', selector: step.selector });
+            var resp = await chrome.tabs.sendMessage(tabId, { action: 'performCopyText', selector: step.selector });
+            if (!resp?.success) throw new Error(resp?.error || 'Copy failed');
             break;
         case 'Bekle':
             // Wait action handled in background script
             await new Promise(resolve => setTimeout(resolve, parseFloat(step.value) * 1000));
             break;
         case 'Sayfayı Kaydır':
-            await chrome.tabs.sendMessage(tabId, { action: 'performScroll', value: step.value });
+            var resp = await chrome.tabs.sendMessage(tabId, { action: 'performScroll', value: step.value });
+            if (!resp?.success) throw new Error(resp?.error || 'Scroll failed');
             break;
         case 'Elementi Bekle':
-            await chrome.tabs.sendMessage(tabId, { action: 'performWaitForElement', selector: step.selector });
-            break;
-        case 'Koşullu Adım':
-            // Conditional steps will need more complex logic, possibly recursive execution
-            // For now, just log or skip
-            console.log('Conditional step encountered, not yet fully implemented for execution:', step);
+            var resp = await chrome.tabs.sendMessage(tabId, { action: 'performWaitForElement', selector: step.selector });
+            if (!resp?.success) throw new Error(resp?.error || 'Wait for element failed');
             break;
         default:
             console.warn('Unknown action type:', step.action);
@@ -88,7 +100,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     await executeStep(tabId, step);
                 } catch (error) {
                     console.error('Scenario execution failed at step:', step, error);
-                    // Optionally send error back to popup
+                    chrome.tabs.sendMessage(tabId, { action: 'scenarioError', message: error.message });
                     break; // Stop execution on first error
                 }
             }

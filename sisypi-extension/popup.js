@@ -232,7 +232,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveScenarioButton = document.getElementById('save-scenario-button');
     saveScenarioButton.addEventListener('click', () => {
         const scenarioTitle = document.querySelector('.scenario-title-input').value;
-        const steps = [];
 
         // Helper function to extract step data recursively
         function extractStepData(parentElement) {
@@ -250,6 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (isConditional) {
                     const conditionalStepsContainer = stepItem.querySelector('.conditional-steps');
+                    stepData.condition = stepName; // use the name as selector condition
                     stepData.nestedSteps = extractStepData(conditionalStepsContainer); // Recursive call
                 } else {
                     const actionType = stepItem.querySelector('.action-select').value;
@@ -268,35 +268,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const rootSteps = extractStepData(stepsList);
 
-        const scenarioId = Date.now().toString(); // Simple unique ID
-        const scenario = { id: scenarioId, title: scenarioTitle, url: 'current_url_placeholder', steps: rootSteps };
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            const currentUrl = tabs.length > 0 ? tabs[0].url : '';
+            chrome.storage.local.get('currentScenario', (csData) => {
+                const scenarioId = csData.currentScenario ? csData.currentScenario.id : `scenario-${Date.now()}`;
+                const scenario = { id: scenarioId, title: scenarioTitle, url: currentUrl, steps: rootSteps };
 
-        // Save to chrome.storage.sync for the library
-        chrome.storage.sync.get({ scenarios: [] }, (data) => {
-            const scenarios = data.scenarios;
-            // Find and replace if scenario already exists (for editing)
-            const existingScenarioIndex = scenarios.findIndex(s => s.id === scenario.id);
-            if (existingScenarioIndex > -1) {
-                scenarios[existingScenarioIndex] = scenario;
-            } else {
-                scenarios.push(scenario);
-            }
-            chrome.storage.sync.set({ scenarios: scenarios }, () => {
-                console.log('Scenario saved:', scenario);
-                alert('Senaryo kaydedildi!');
-                loadScenarios(); // Refresh library view
+                chrome.storage.sync.get({ scenarios: [] }, (data) => {
+                    const scenarios = data.scenarios;
+                    const existingScenarioIndex = scenarios.findIndex(s => s.id === scenarioId);
+                    if (existingScenarioIndex > -1) {
+                        scenarios[existingScenarioIndex] = scenario;
+                    } else {
+                        scenarios.push(scenario);
+                    }
+                    chrome.storage.sync.set({ scenarios: scenarios }, () => {
+                        console.log('Scenario saved:', scenario);
+                        alert('Senaryo kaydedildi!');
+                        loadScenarios();
+                    });
+                });
+
+                chrome.storage.local.set({ currentScenario: scenario });
             });
         });
-
-        // Also update currentScenario in chrome.storage.local
-        chrome.storage.local.set({ currentScenario: scenario });
     });
 
     // --- Run Scenario ---
     const runScenarioButton = document.getElementById('run-scenario-button');
     runScenarioButton.addEventListener('click', () => {
         const scenarioTitle = document.querySelector('.scenario-title-input').value;
-        const steps = [];
 
         function extractRunStepData(parentElement) {
             const extractedSteps = [];
@@ -311,6 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (isConditional) {
                     const conditionalStepsContainer = stepItem.querySelector('.conditional-steps');
+                    stepData.condition = stepName; // name used as selector
                     stepData.nestedSteps = extractRunStepData(conditionalStepsContainer); // Recursive call
                 } else {
                     const actionType = stepItem.querySelector('.action-select').value;
@@ -327,10 +329,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return extractedSteps;
         }
 
-        const scenarioToRun = { title: scenarioTitle, url: 'current_url_placeholder', steps: extractRunStepData(stepsList) };
-
         chrome.tabs.query({ active: true, currentWindow: true, url: ["http://*/*", "https://*/*"] }, (tabs) => {
             if (tabs.length > 0) {
+                const scenarioToRun = { title: scenarioTitle, url: tabs[0].url, steps: extractRunStepData(stepsList) };
                 chrome.runtime.sendMessage({ action: "runScenario", scenario: scenarioToRun, tabId: tabs[0].id });
             } else {
                 alert("Senaryoyu çalıştırmak için aktif bir web sayfası sekmesi bulunamadı.");
