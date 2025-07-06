@@ -6,7 +6,7 @@
  */
 const getInitialAppState = async () => {
     const data = await chrome.storage.local.get('sisypi_appState');
-    return data.sisypi_appState || { currentView: 'main', activeScenarioId: null, pendingSelector: null };
+    return data.sisypi_appState || { currentView: 'main', activeScenarioId: null };
 };
 
 // Eklenti ilk kurulduğunda veya güncellendiğinde çalışır.
@@ -26,7 +26,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
             await chrome.storage.local.set({ sisypi_lang: 'tr' });
         }
         if(!data.sisypi_appState) {
-            await chrome.storage.local.set({ sisypi_appState: { currentView: 'main', activeScenarioId: null, pendingSelector: null } });
+            await chrome.storage.local.set({ sisypi_appState: { currentView: 'main', activeScenarioId: null } });
         }
     }
 });
@@ -86,12 +86,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             chrome.tabs.sendMessage(tab.id, {
                 action: 'executeScenario',
                 steps: scenario.adimlar
-            }, () => {
-                 if (chrome.runtime.lastError) { /* Hata yönetimi */ }
+            }, (response) => {
+                 if (chrome.runtime.lastError) {
+                    console.error("Background: Error sending executeScenario message:", chrome.runtime.lastError.message);
+                    chrome.runtime.sendMessage({
+                        action: 'updateRunStatus',
+                        status: {
+                            type: 'hata',
+                            messageKey: 'hataGenel',
+                            params: { adim: 'Senaryo Çalıştırma', mesaj: chrome.runtime.lastError.message }
+                        }
+                    });
+                 }
             });
             sendResponse({ success: true });
         },
-        startSelectionMode: async () => {
+        startSelection: async () => {
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
             if (!tab || !tab.id) {
                 chrome.runtime.sendMessage({
@@ -106,24 +116,63 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 return;
             }
             await injectContentScript(tab.id);
-            chrome.tabs.sendMessage(tab.id, { action: 'startSelection' }, () => {
-                 if (chrome.runtime.lastError) { /* Hata yönetimi */}
+            chrome.tabs.sendMessage(tab.id, { action: 'startSelection' }, (response) => {
+                 if (chrome.runtime.lastError) {
+                    console.error("Background: Error sending startSelection message:", chrome.runtime.lastError.message);
+                    chrome.runtime.sendMessage({
+                        action: 'updateRunStatus',
+                        status: {
+                            type: 'hata',
+                            messageKey: 'hataGenel',
+                            params: { adim: 'Seçim Modu Başlatma', mesaj: chrome.runtime.lastError.message }
+                        }
+                    });
+                 } else {
+                    activeSelectionTabId = tab.id; // Seçim modunun başladığı sekme ID'sini kaydet
+                    console.log("Background: activeSelectionTabId set to", activeSelectionTabId);
+                 }
             });
-            sendResponse({ success: true });
         },
-        elementSelected: async (request) => {
-            if (!request || !request.elementData) {
-                console.warn("Background: elementSelected called without elementData", request);
-                sendResponse({ success: false });
+        selectElementByNumber: async () => {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (!tab || !tab.id) {
+                // sendResponse({ success: false, error: 'No active tab.' }); // Popup bu mesaja yanıt beklemiyor
                 return;
             }
-            console.log("Background: Received elementSelected message with elementData:", request.elementData);
-            const currentState = await getInitialAppState();
-            // Safely access elementData, default to null if undefined
-            currentState.pendingSelector = request.elementData || null;
-            await chrome.storage.local.set({ sisypi_appState: currentState });
-            console.log("Background: Saved pendingSelector to storage:", currentState.pendingSelector);
-            sendResponse({ success: true });
+            try {
+                chrome.tabs.sendMessage(tab.id, { action: 'selectElementByNumber', elementNumber: request.elementNumber });
+            } catch (e) {
+                console.error(`Background: Failed to send selectElementByNumber message to content script: ${e.message}`);
+                // Hata durumunda popup'a bilgi göndermek isterseniz burada bir mesaj gönderebilirsiniz.
+            }
+            // return true; // Bu handler artık asenkron yanıt göndermiyor
+        },
+        elementSelectedFromContent: async () => {
+            // content.js'ten gelen element verisini popup'a ilet
+            chrome.runtime.sendMessage({ action: 'elementSelected', elementData: request.elementData });
+        },
+        stopSelection: async () => {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (!tab || !tab.id) {
+                sendResponse({ success: false, error: 'No active tab.' });
+                return;
+            }
+            chrome.tabs.sendMessage(tab.id, { action: 'stopSelection' }, (response) => {
+                if (chrome.runtime.lastError) {
+                    console.error("Background: Error sending stopSelection message:", chrome.runtime.lastError.message);
+                    chrome.runtime.sendMessage({
+                        action: 'updateRunStatus',
+                        status: {
+                            type: 'hata',
+                            messageKey: 'hataGenel',
+                            params: { adim: 'Seçim Modu Durdurma', mesaj: chrome.runtime.lastError.message }
+                        }
+                    });
+                } else {
+                    activeSelectionTabId = null; // Seçim modunun durduğu sekme ID'sini temizle
+                    console.log("Background: activeSelectionTabId cleared (stopSelection).");
+                }
+            });
         },
         updateRunStatus: () => {
             // Content script'ten gelen durumu popup'a iletiyoruz.
@@ -175,3 +224,32 @@ async function injectContentScript(tabId) {
         // Farklı origin'deki sayfalara (chrome://, file://) enjekte edilemez.
     }
 }
+
+// Sekme değiştiğinde veya güncellendiğinde seçim modunu durdur
+let activeSelectionTabId = null;
+
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+    if (activeSelectionTabId && activeSelectionTabId !== activeInfo.tabId) {
+        // Eski sekmede seçim modunu durdur
+        try {
+            await chrome.tabs.sendMessage(activeSelectionTabId, { action: 'stopSelection' });
+        } catch (e) {
+            // Sekme kapanmış veya içerik betiği artık aktif değilse hata oluşabilir.
+            console.warn("Background: Error stopping selection on old tab:", e.message);
+        }
+        activeSelectionTabId = null;
+        console.log("Background: activeSelectionTabId cleared (onActivated).");
+    }
+});
+
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+    if (activeSelectionTabId === tabId && changeInfo.status === 'loading') {
+        // Sekme yeniden yükleniyor veya yeni bir sayfaya gidiyor, seçim modunu durdur
+        try {
+            await chrome.tabs.sendMessage(tabId, { action: 'stopSelection' });
+        } catch (e) {
+            console.warn("Background: Error stopping selection on updated tab:", e.message);
+        }
+        activeSelectionTabId = null;
+    }
+});

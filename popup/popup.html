@@ -92,6 +92,19 @@
             </div>
         </div>
     </div>
+
+    <!-- ELEMENT SEÇİM MODALI -->
+    <div id="element-secim-modal-konteyner" style="display: none;">
+        <div id="element-secim-modal">
+            <h3 data-lang="elementSecimBaslik">Element Seçimi</h3>
+            <p data-lang="elementSecimAciklama">Lütfen sayfada işaretlenen elementin numarasını girin:</p>
+            <input type="number" id="element-numarasi-input" class="input-alani" placeholder="Element Numarası">
+            <div class="modal-alt-bilgi" style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+                <button id="element-secim-iptal-btn" class="btn-ikincil" data-lang="iptal">İptal</button>
+                <button id="element-secim-onayla-btn" class="btn-birincil" data-lang="sec">Seç</button>
+            </div>
+        </div>
+    </div>
     
     <script src="../lib/sortable.min.js"></script>
     <script src="popup.js"></script>

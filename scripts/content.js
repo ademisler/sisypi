@@ -9,84 +9,84 @@
     window.sisypiContentScriptInjected = true;
 
     let sonVurgulananElement = null;
+    let sisypiMarkers = []; // İşaretleyicileri tutmak için yeni dizi
 
     // --- ELEMENT SEÇİM MODU ---
     const secimModu = {
         baslat: () => {
+            console.log("Content Script: Selection mode started.");
             document.body.classList.add('sisypi-secim-modu-aktif');
-            document.addEventListener('mouseover', secimModu.elementiVurgula);
-            document.addEventListener('mouseout', secimModu.vurgulamayiKaldir);
-            document.addEventListener('click', secimModu.elementiSec, { capture: true });
-            
+            // Önceki işaretleyicileri temizle
+            sisypiMarkers.forEach(marker => marker.markerDiv.remove());
+            sisypiMarkers = [];
+
+            // Eski olay dinleyicilerini kaldır
+            document.removeEventListener('mouseover', secimModu.elementiVurgula);
+            document.removeEventListener('mouseout', secimModu.vurgulamayiKaldir);
+            document.removeEventListener('click', secimModu.elementiSec, { capture: true });
+
+            secimModu.elementleriIsaretle(); // Yeni fonksiyonu çağırarak elementleri işaretle
+
             // Stilleri sayfaya ekle
             if (!document.getElementById('sisypi-styles')) {
                 const style = document.createElement('style');
                 style.id = 'sisypi-styles';
                 style.textContent = `
-                    body.sisypi-secim-modu-aktif, body.sisypi-secim-modu-aktif * { cursor: crosshair !important; }
-                    .sisypi-secim-icin-vurgula { outline: 3px solid #db2777 !important; outline-offset: 3px; background-color: rgba(219, 39, 119, 0.2) !important; box-shadow: 0 0 15px rgba(219, 39, 119, 0.5) !important; }
+                    body.sisypi-secim-modu-aktif, body.sisypi-secim-modu-aktif * { cursor: default !important; } /* İmleci varsayılana ayarla */
+                    .sisypi-selection-marker {
+                        position: absolute;
+                        z-index: 999999;
+                        background: #db2777;
+                        color: white;
+                        border-radius: 50%;
+                        width: 24px; /* Biraz daha büyük */
+                        height: 24px; /* Biraz daha büyük */
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        font-size: 14px; /* Daha büyük yazı tipi */
+                        cursor: pointer;
+                        box-shadow: 0 0 8px rgba(0,0,0,0.6); /* Daha güçlü gölge */
+                        transition: transform 0.1s ease-in-out;
+                    }
+                    .sisypi-selection-marker:hover {
+                        transform: scale(1.2); /* Üzerine gelindiğinde büyüme efekti */
+                    }
                 `;
                 document.head.appendChild(style);
             }
         },
         durdur: () => {
+            console.log("Content Script: Selection mode stopped.");
             document.body.classList.remove('sisypi-secim-modu-aktif');
-            secimModu.vurgulamayiKaldir();
+            // İşaretleyicileri kaldır
+            sisypiMarkers.forEach(marker => marker.markerDiv.remove());
+            sisypiMarkers = [];
+            // Eski olay dinleyicilerini kaldır
             document.removeEventListener('mouseover', secimModu.elementiVurgula);
             document.removeEventListener('mouseout', secimModu.vurgulamayiKaldir);
             document.removeEventListener('click', secimModu.elementiSec, { capture: true });
         },
-        elementiVurgula: (e) => {
-            const interactiveTags = ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A'];
-            let hedef = e.target;
+        
+        elementleriIsaretle: () => {
+            const interactiveElements = document.querySelectorAll('a[href], input:not([type="hidden"]), textarea, [contenteditable="true"], p, span, div, h1, h2, h3, h4, h5, h6');
+            let markerIndex = 1;
+            interactiveElements.forEach(el => {
+                // Sadece görünür elementleri işle
+                if (el.offsetWidth > 0 || el.offsetHeight > 0) {
+                    const rect = el.getBoundingClientRect();
+                    const marker = document.createElement('div');
+                    marker.classList.add('sisypi-selection-marker');
+                    marker.textContent = markerIndex++;
+                    marker.style.top = `${rect.top + window.scrollY}px`;
+                    marker.style.left = `${rect.left + window.scrollX}px`;
 
-            const elementsAtPoint = document.elementsFromPoint(e.clientX, e.clientY);
-            const deeperInteractive = elementsAtPoint.find(el => interactiveTags.includes(el.tagName));
-            if (deeperInteractive) {
-                hedef = deeperInteractive;
-            }
-
-            secimModu.vurgulamayiKaldir();
-            hedef.classList.add('sisypi-secim-icin-vurgula');
-            sonVurgulananElement = hedef;
-        },
-        vurgulamayiKaldir: () => {
-            if (sonVurgulananElement) {
-                sonVurgulananElement.classList.remove('sisypi-secim-icin-vurgula');
-                sonVurgulananElement = null;
-            }
-        },
-        elementiSec: (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const interactiveTags = ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A'];
-            let targetElement = e.target;
-            const elementsAtPoint = document.elementsFromPoint(e.clientX, e.clientY);
-            const deeperInteractive = elementsAtPoint.find(el => interactiveTags.includes(el.tagName));
-            if (deeperInteractive) {
-                targetElement = deeperInteractive;
-            }
-
-            const secici = secimModu.cssSeciciOlustur(targetElement);
-            const elementData = {
-                selector: secici,
-                tagName: targetElement.tagName,
-                id: targetElement.id || null,
-                name: targetElement.name || null,
-                value: targetElement.value !== undefined ? targetElement.value : null,
-                textContent: targetElement.textContent ? targetElement.textContent.trim() : null,
-                placeholder: targetElement.placeholder || null
-            };
-            console.log("Content Script: Final targetElement:", targetElement);
-            console.log("Content Script: Element data to send:", elementData);
-            secimModu.durdur();
-            chrome.runtime.sendMessage({ action: 'elementSelected', elementData: elementData }, (response) => {
-                if (chrome.runtime.lastError) {
-                    console.error("Content Script: Error sending message:", chrome.runtime.lastError.message);
+                    document.body.appendChild(marker);
+                    sisypiMarkers.push({ markerDiv: marker, targetElement: el }); // Hem işaretleyiciyi hem de hedef elementi sakla
                 }
             });
         },
+        
         cssSeciciOlustur: (el) => {
             if (!(el instanceof Element)) return '';
 
@@ -328,6 +328,34 @@
         } else if (request.action === 'executeScenario') {
             senaryoMotoru.calistir(request.steps);
             sendResponse({ success: true });
+        } else if (request.action === 'selectElementByNumber') {
+            try {
+                const elementNumber = request.elementNumber;
+                if (elementNumber > 0 && elementNumber <= sisypiMarkers.length) {
+                    const targetElement = sisypiMarkers[elementNumber - 1].targetElement;
+                    const secici = secimModu.cssSeciciOlustur(targetElement);
+                    const elementData = {
+                        selector: secici,
+                        tagName: targetElement.tagName,
+                        id: targetElement.id || null,
+                        name: targetElement.name || null,
+                        value: targetElement.value !== undefined ? targetElement.value : null,
+                        textContent: targetElement.textContent ? targetElement.textContent.trim() : null,
+                        placeholder: targetElement.placeholder || null
+                    };
+                    chrome.runtime.sendMessage({ action: 'elementSelectedFromContent', elementData: elementData });
+                    sendResponse({ success: true }); // background.js'e onay gönder
+                    secimModu.durdur();
+                } else {
+                    sendResponse({ success: false, error: 'Geçersiz element numarası.' });
+                }
+            } catch (e) {
+                console.error("Content Script: Error in selectElementByNumber:", e);
+                sendResponse({ success: false, error: `Element seçimi sırasında hata oluştu: ${e.message}` });
+                secimModu.durdur(); // Hata durumunda da modu durdur
+            }
+        } else if (request.action === 'stopSelection') {
+            secimModu.durdur();
         }
     });
 

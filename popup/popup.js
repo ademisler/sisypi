@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- DİL METİNLERİ (i18n) ---
     const lang = {
         tr: { appTitle: "Sisypi", yeniSenaryo: "Yeni Senaryo Oluştur", tumunuYedekle: "Tümünü Yedekle", yedektenYukle: "Yedekten Yükle", geri: "Geri", calistir: "Çalıştır", kaydet: "Kaydet", urlKisitlamaEtiket: "URL Kısıtlaması (İsteğe Bağlı)", urlKisitlamaPlaceholder: "örn: google.com/maps", senaryoAdiPlaceholder: "Senaryo Adı", adimEkle: "Element Seçerek Adım Ekle", aracKutusu: "Araç Kutusu", aracBekle: "Bekle", aracYorum: "Yorum", aracGoruntu: "Görüntü", aracEger: "EĞER", aracDegilse: "DEĞİLSE", aracEgerBitti: "EĞER B.", aracDongu: "N Kez", aracDonguBitti: "DÖNGÜ B.", aracKaydir: "Kaydır", modalBaslik: "Eylemi Yapılandır", modalDuzenleBaslik: "Adımı Düzenle", modalHedefElement: "Hedef element:", modalNeYapmakIstersin: "Ne yapmak istersiniz?", modalYazilacakMetin: "Yazılacak Metin (Değişken için {{isim}} kullanın):", modalDegiskeneKaydet: "Kopyalanan değeri değişkene kaydet (isteğe bağlı):", modalDegiskenPlaceholder: "örn: kullaniciAdi", iptal: "İptal", adimiEkle: "Adımı Ekle", degisiklikleriKaydet: "Değişiklikleri Kaydet", eylemTikla: "Tıkla", eylemYaz: "Yaz", eylemKopyala: "Kopyala", senaryoSilOnay: "'{{baslik}}' senaryosunu silmek istediğinize emin misiniz?", yedekYukleOnay: "Mevcut tüm senaryolar silinecek ve yedekten gelenlerle değiştirilecek. Emin misiniz?", yedeklemeBasarili: "Geri yükleme başarılı!", gecersizJson: "Hata: Geçersiz JSON dosyası.", promptBekleme: "Bekleme süresi (ms):", promptYorum: "Yorum metni:", promptTekrar: "Tekrar sayısı:", promptIf: "Kontrol edilecek elementin seçicisi:", durumCalisiyor: "Senaryo çalıştırılıyor...", durumBasarili: "Senaryo başarıyla tamamlandı!", hataUrlUyusmuyor: "Hata: Senaryonun URL kısıtlaması ('{{kisitlama}}') mevcut sayfa adresiyle uyuşmuyor.", hataSeciciBulunamadi: "Seçici bulunamadı: {{secici}}", hataGenel: "Hata (Adım {{adim}}): {{mesaj}}", isimsizSenaryo: "İsimsiz Senaryo" },
-        en: { appTitle: "Sisypi", yeniSenaryo: "Create New Scenario", tumunuYedekle: "Backup All", yedektenYukle: "Restore from Backup", geri: "Back", calistir: "Run", kaydet: "Save", urlKisitlamaEtiket: "URL Constraint (Optional)", urlKisitlamaPlaceholder: "e.g., google.com/maps", senaryoAdiPlaceholder: "Scenario Name", adimEkle: "Add Step by Selecting Element", aracKutusu: "Toolbox", aracBekle: "Wait", aracYorum: "Comment", aracGoruntu: "Image", aracEger: "IF", aracDegilse: "ELSE", aracEgerBitti: "ENDIF", aracDongu: "N Times", aracDonguBitti: "ENDL", aracKaydir: "Scroll", modalBaslik: "Configure Action", modalDuzenleBaslik: "Edit Step", modalHedefElement: "Target element:", modalNeYapmakIstersin: "What would you like to do?", modalYazilacakMetin: "Text to type (use {{name}} for variables):", modalDegiskeneKaydet: "Save copied value to a variable (optional):", modalDegiskenPlaceholder: "e.g., userName", iptal: "Cancel", adimiEkle: "Add Step", degisiklikleriKaydet: "Save Changes", eylemTikla: "Click", eylemYaz: "Type", eylemKopyala: "Copy", senaryoSilOnay: "Are you sure you want to delete the '{{baslik}}' scenario?", yedekYukleOnay: "All current scenarios will be deleted and replaced with the backup. Are you sure?", yedeklemeBasarili: "Restore successful!", gecersizJson: "Error: Invalid JSON file.", promptBekleme: "Wait duration (ms):", promptYorum: "Comment text:", promptTekrar: "Number of repetitions:", promptIf: "Selector of the element to check:", durumCalisiyor: "Scenario running...", durumBasarili: "Scenario completed successfully!", hataUrlUyusmuyor: "Error: Scenario's URL constraint ('{{kisitlama}}') does not match the current page URL.", hataSeciciBulunamadi: "Selector not found: {{secici}}", hataGenel: "Error (Step {{adim}}): {{mesaj}}", isimsizSenaryo: "Untitled Scenario" }
+        en: { appTitle: "Sisypi", yeniSenaryo: "Create New Scenario", tumunuYedekle: "Backup All", yedektenYukle: "Restore from Backup", geri: "Back", calistir: "Run", kaydet: "Save", urlKisitlamaEtiket: "URL Constraint (Optional)", urlKisitlamaPlaceholder: "e.g., google.com/maps", senaryoAdiPlaceholder: "Scenario Name", adimEkle: "Add Step by Selecting Element", aracKutusu: "Toolbox", aracBekle: "Wait", aracYorum: "Comment", aracGoruntu: "Image", aracEger: "IF", aracDegilse: "ELSE", aracEgerBitti: "ENDIF", aracDongu: "N Times", aracDonguBitti: "ENDL", aracKaydir: "Scroll", modalBaslik: "Configure Action", modalDuzenleBaslik: "Edit Step", modalHedefElement: "Target element:", modalNeYapmakIstersin: "What would you like to do?", modalYazilacakMetin: "Text to type (use {{name}} for variables):", modalDegiskeneKaydet: "Save copied value to a variable (optional):", modalDegiskenPlaceholder: "e.g., userName", iptal: "Cancel", adimiEkle: "Add Step", degisiklikleriKaydet: "Save Changes", eylemTikla: "Click", eylemYaz: "Type", eylemKopyala: "Copy", senaryoSilOnay: "Are you sure you want to delete the '{{baslik}}' scenario?", yedekYukleOnay: "All current scenarios will be deleted and replaced with the backup. Are you sure?", yedeklemeBasarili: "Restore successful!", gecersizJson: "Error: Invalid JSON file.", promptBekleme: "Wait duration (ms):", promptYorum: "Comment text:", promptTekrar: "Number of repetitions:", promptIf: "Selector of the element to check:", durumCalisiyor: "Scenario running...", durumBasarili: "Scenario completed successfully!", hataUrlUyusmuyor: "Error: Scenario's URL constraint ('{{kisitlama}}') does not match the current page URL.", hataSeciciBulunamadi: "Selector not found: {{secici}}", hataGenel: "Error (Step {{adim}}): {{mesaj}}", isimsizSenaryo: "Untitled Scenario", elementSecimBaslik: "Element Selection", elementSecimAciklama: "Please enter the number of the element marked on the page:", sec: "Select" }
     };
 
     // --- UYGULAMA DURUMU & VERİLER (POPUP'A ÖZEL) ---
@@ -30,7 +30,11 @@ document.addEventListener('DOMContentLoaded', () => {
         eylemSecenekleri: document.getElementById('eylem-secenekleri'), metinParametreAlani: document.getElementById('metin-parametre-alani'),
         metinInput: document.getElementById('metin-input'), degiskenParametreAlani: document.getElementById('degisken-parametre-alani'),
         degiskenInput: document.getElementById('degisken-input'), modalOnaylaBtn: document.getElementById('modal-onayla-btn'),
-        modalIptalBtn: document.getElementById('modal-iptal-btn'), dilTrBtn: document.getElementById('dil-tr-btn'), dilEnBtn: document.getElementById('dil-en-btn')
+        modalIptalBtn: document.getElementById('modal-iptal-btn'), dilTrBtn: document.getElementById('dil-tr-btn'), dilEnBtn: document.getElementById('dil-en-btn'),
+        elementSecimModalKonteyner: document.getElementById('element-secim-modal-konteyner'),
+        elementNumarasiInput: document.getElementById('element-numarasi-input'),
+        elementSecimOnaylaBtn: document.getElementById('element-secim-onayla-btn'),
+        elementSecimIptalBtn: document.getElementById('element-secim-iptal-btn')
     };
 
     const { adimlarKonteyner, senaryoAdiInput, senaryoUrlInput } = tumElementReferanslari;
@@ -232,6 +236,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const modaliKapat = () => tumElementReferanslari.eylemModalKonteyner.style.display = 'none';
+
+    const elementSecimModalGoster = () => {
+        tumElementReferanslari.elementSecimModalKonteyner.style.display = 'flex';
+        tumElementReferanslari.elementNumarasiInput.value = '';
+        tumElementReferanslari.elementNumarasiInput.focus();
+    };
+
+    const elementSecimModalKapat = () => {
+        tumElementReferanslari.elementSecimModalKonteyner.style.display = 'none';
+    };
     
     // --- VERİ İŞLEMLERİ (BACKGROUND SCRIPT İLE İLETİŞİM) ---
     const mevcutSenaryoyuKaydet = () => {
@@ -276,12 +290,34 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     adimEkleBtn.addEventListener('click', () => {
-        chrome.runtime.sendMessage({ action: 'startSelectionMode' });
-        window.close(); // Popup'ı kapatarak kullanıcının sayfayı görmesini sağla
+        chrome.runtime.sendMessage({ action: 'startSelection' });
+        elementSecimModalGoster();
     });
 
     modalOnaylaBtn.addEventListener('click', modalEyleminiOnayla);
     modalIptalBtn.addEventListener('click', modaliKapat);
+
+    tumElementReferanslari.elementSecimOnaylaBtn.addEventListener('click', () => {
+        const elementNumber = parseInt(tumElementReferanslari.elementNumarasiInput.value, 10);
+        if (!isNaN(elementNumber) && elementNumber > 0) {
+            chrome.runtime.sendMessage({ action: 'selectElementByNumber', elementNumber: elementNumber }, (response) => {
+                if (chrome.runtime.lastError) {
+                    console.error("Error sending selectElementByNumber message:", chrome.runtime.lastError.message);
+                    alert("Element seçimi sırasında bir hata oluştu.");
+                } else if (!response.success) {
+                    alert(response.error || "Element seçimi başarısız oldu.");
+                }
+                // elementSecimModalKapat(); // Bu çağrı elementSelected mesajı alındığında yapılacak
+            });
+        } else {
+            alert("Lütfen geçerli bir element numarası girin.");
+        }
+    });
+
+    tumElementReferanslari.elementSecimIptalBtn.addEventListener('click', () => {
+        chrome.runtime.sendMessage({ action: 'stopSelection' }); // Seçim modunu durdur
+        elementSecimModalKapat();
+    });
 
     senaryoListesiKonteyner.addEventListener('click', (e) => {
         const kart = e.target.closest('.senaryo-karti');
@@ -391,6 +427,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if(type !== 'calisiyor'){
                 tumElementReferanslari.senaryoCalistirBtn.disabled = false;
             }
+        } else if (request.action === 'elementSelected') {
+            elementSecimModalKapat();
+            modalGoster({ mod: 'ekle', secici: request.elementData });
         }
     });
 
@@ -416,18 +455,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     senaryoDuzenle(appState.activeScenarioId);
                 } else {
                     gorunumuGoster(tumElementReferanslari.anaGorunum);
-                }
-
-                // Bekleyen bir element seçici var mı kontrol et
-                if (appState.pendingSelector) {
-                    console.log("Popup: pendingSelector found, showing modal:", appState.pendingSelector);
-                    modalGoster({ mod: 'ekle', secici: appState.pendingSelector });
-                    // Seçiciyi temizle - modal gösterildikten sonra
-                    chrome.runtime.sendMessage({ action: 'updateAppState', data: { pendingSelector: null } }, (response) => {
-                        if (chrome.runtime.lastError) {
-                            console.error("Error clearing pending selector:", chrome.runtime.lastError.message);
-                        }
-                    });
                 }
             }
         });
