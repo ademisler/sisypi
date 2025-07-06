@@ -39,6 +39,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             const scenariosData = await chrome.storage.local.get('sisypi_scenarios');
             const langData = await chrome.storage.local.get('sisypi_lang');
             const appState = await getInitialAppState();
+            console.log("Background: Sending initial appState to popup:", appState);
             sendResponse({
                 scenarios: scenariosData.sisypi_scenarios || {},
                 language: langData.sisypi_lang || 'tr',
@@ -60,7 +61,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse({ success: true });
         },
         runScenario: async () => {
-            const { scenarios } = await chrome.storage.local.get('sisypi_scenarios');
+            const scenarios = request.allScenarios || (await chrome.storage.local.get('sisypi_scenarios')).sisypi_scenarios;
             const scenario = scenarios[request.scenarioId];
             if (!scenario) {
                 sendResponse({ success: false, error: 'Scenario not found' });
@@ -92,16 +93,31 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         },
         startSelectionMode: async () => {
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (!tab || !tab.id) {
+                chrome.runtime.sendMessage({
+                    action: 'updateRunStatus',
+                    status: {
+                        type: 'hata',
+                        messageKey: 'hataGenel',
+                        params: { adim: 'Seçim Modu', mesaj: 'İçerik betiği bu sayfaya enjekte edilemiyor. Lütfen normal bir web sayfasında deneyin.' }
+                    }
+                });
+                sendResponse({ success: false, error: 'Cannot inject content script on this page.' });
+                return;
+            }
             await injectContentScript(tab.id);
             chrome.tabs.sendMessage(tab.id, { action: 'startSelection' }, () => {
                  if (chrome.runtime.lastError) { /* Hata yönetimi */}
             });
             sendResponse({ success: true });
         },
-        elementSelected: async () => {
+        elementSelected: async (request) => {
+            console.log("Background: Received elementSelected message with elementData:", request.elementData);
             const currentState = await getInitialAppState();
-            currentState.pendingSelector = request.selector;
+            // Safely access elementData, default to null if undefined
+            currentState.pendingSelector = request.elementData || null;
             await chrome.storage.local.set({ sisypi_appState: currentState });
+            console.log("Background: Saved pendingSelector to storage:", currentState.pendingSelector);
             sendResponse({ success: true });
         },
         updateRunStatus: () => {

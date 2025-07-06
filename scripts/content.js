@@ -51,25 +51,117 @@
         elementiSec: (e) => {
             e.preventDefault();
             e.stopPropagation();
-            const secici = secimModu.cssSeciciOlustur(e.target);
+
+            let targetElement = e.target;
+            // Try to find the closest interactive element
+            const interactiveTags = ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A'];
+            
+            // Prioritize the clicked element itself if it's interactive
+            if (!interactiveTags.includes(targetElement.tagName) && targetElement.parentElement) {
+                let current = e.target.parentElement;
+                while (current && current !== document.body) {
+                    if (interactiveTags.includes(current.tagName)) {
+                        targetElement = current;
+                        break;
+                    }
+                    current = current.parentElement;
+                }
+            }
+
+            const secici = secimModu.cssSeciciOlustur(targetElement);
+            const elementData = {
+                selector: secici,
+                tagName: targetElement.tagName,
+                id: targetElement.id || null,
+                name: targetElement.name || null,
+                value: targetElement.value !== undefined ? targetElement.value : null,
+                textContent: targetElement.textContent ? targetElement.textContent.trim() : null,
+                placeholder: targetElement.placeholder || null
+            };
+            console.log("Content Script: Final targetElement:", targetElement);
+            console.log("Content Script: Element data to send:", elementData);
             secimModu.durdur();
-            chrome.runtime.sendMessage({ action: 'elementSelected', selector: secici });
+            chrome.runtime.sendMessage({ action: 'elementSelected', elementData: elementData }, (response) => {
+                if (chrome.runtime.lastError) {
+                    console.error("Content Script: Error sending message:", chrome.runtime.lastError.message);
+                }
+            });
         },
         cssSeciciOlustur: (el) => {
-            if (!(el instanceof Element)) return;
-            if (el.id) return `#${el.id.trim()}`;
-            const yol = [];
-            while (el.parentElement) {
-                let parca = el.tagName.toLowerCase();
-                const kardesler = Array.from(el.parentElement.children).filter(e => e.tagName === el.tagName);
-                if (kardesler.length > 1) {
-                    const index = kardesler.indexOf(el) + 1;
-                    parca += `:nth-of-type(${index})`;
+            if (!(el instanceof Element)) return '';
+
+            const getUniqueSelector = (element) => {
+                if (!(element instanceof Element)) return '';
+
+                // 1. Try ID
+                if (element.id) {
+                    const selector = `#${element.id.trim()}`;
+                    if (document.querySelectorAll(selector).length === 1) {
+                        return selector;
+                    }
                 }
-                yol.unshift(parca);
-                el = el.parentElement;
+
+                // 2. Try TagName with specific attributes (name, type, href, src, alt, title, role, aria-label, etc.)
+                const tagName = element.tagName.toLowerCase();
+                const attributesToTest = [];
+
+                // Common interactive attributes
+                if (element.name) attributesToTest.push(`[name="${element.name.trim()}"]`);
+                if (element.type && tagName === 'input') attributesToTest.push(`[type="${element.type.trim()}"]`);
+                if (element.placeholder) attributesToTest.push(`[placeholder="${element.placeholder.trim()}"]`);
+                if (element.href && tagName === 'a') attributesToTest.push(`[href="${element.href.trim()}"]`);
+                if (element.src && (tagName === 'img' || tagName === 'iframe')) attributesToTest.push(`[src="${element.src.trim()}"]`);
+                if (element.alt && tagName === 'img') attributesToTest.push(`[alt="${element.alt.trim()}"]`);
+                if (element.title) attributesToTest.push(`[title="${element.title.trim()}"]`);
+                if (element.role) attributesToTest.push(`[role="${element.role.trim()}"]`);
+                if (element.getAttribute('aria-label')) attributesToTest.push(`[aria-label="${element.getAttribute('aria-label').trim()}"]`);
+
+                // Data attributes
+                for (const attr of element.attributes) {
+                    if (attr.name.startsWith('data-')) {
+                        attributesToTest.push(`[${attr.name}="${attr.value.trim()}"]`);
+                    }
+                }
+
+                // Class names (try individual unique classes first, then combined)
+                if (element.className) {
+                    const classes = element.className.trim().split(/\s+/).filter(cls => cls.length > 0);
+                    for (const cls of classes) {
+                        const tempSelector = `${tagName}.${cls}`;
+                        if (document.querySelectorAll(tempSelector).length === 1) {
+                            return tempSelector;
+                        }
+                    }
+                    if (classes.length > 0) {
+                        attributesToTest.push(`.${classes.join('.')}`);
+                    }
+                }
+
+                // Test combinations of tagName and attributes
+                for (const attrPart of attributesToTest) {
+                    const selector = `${tagName}${attrPart}`;
+                    if (document.querySelectorAll(selector).length === 1) {
+                        return selector;
+                    }
+                }
+
+                // 3. Fallback to nth-of-type
+                let part = tagName;
+                const siblings = Array.from(element.parentElement.children).filter(child => child.tagName === element.tagName);
+                if (siblings.length > 1) {
+                    const index = siblings.indexOf(element) + 1;
+                    part += `:nth-of-type(${index})`;
+                }
+                return part;
+            };
+
+            const path = [];
+            let current = el;
+            while (current && current !== document.body) {
+                path.unshift(getUniqueSelector(current));
+                current = current.parentElement;
             }
-            return yol.join(' > ');
+            return path.join(' > ');
         }
     };
 
@@ -79,6 +171,23 @@
         calisiyor: false,
 
         bekle: (ms) => new Promise(resolve => setTimeout(resolve, ms)),
+        
+        waitForElement: (selector, timeout = 10000) => {
+            return new Promise((resolve, reject) => {
+                const startTime = Date.now();
+                const checkElement = () => {
+                    const element = document.querySelector(selector);
+                    if (element) {
+                        resolve(element);
+                    } else if (Date.now() - startTime > timeout) {
+                        reject(new Error(`Element with selector "${selector}" not found within ${timeout}ms.`));
+                    } else {
+                        requestAnimationFrame(checkElement);
+                    }
+                };
+                requestAnimationFrame(checkElement);
+            });
+        },
         
         durumuGuncelle: (status) => {
             chrome.runtime.sendMessage({ action: 'updateRunStatus', status: status });
@@ -123,7 +232,11 @@
                     let element = null;
                     if (veri.deger) {
                         const secici = this.degiskenleriMetneEkle(veri.deger);
-                        element = document.querySelector(secici);
+                        try {
+                            element = await this.waitForElement(secici);
+                        } catch (e) {
+                            throw new Error(`Seçici bulunamadı veya zaman aşımına uğradı: ${secici}. Hata: ${e.message}`);
+                        }
                     }
                     switch (veri.tip) {
                         case 'tıkla':

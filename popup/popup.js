@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
         yedekleBtn: document.getElementById('yedekle-btn'), geriYukleBtn: document.getElementById('geri-yukle-btn'), geriYukleInput: document.getElementById('geri-yukle-input'),
         durumCubugu: document.getElementById('calistirma-durum-cubugu'), eylemModalKonteyner: document.getElementById('eylem-modal-konteyner'),
         modalBaslik: document.getElementById('modal-baslik'), modalSeciciGosterim: document.getElementById('modal-secici-gosterim'),
+        modalElementDetaylari: document.getElementById('modal-element-detaylari'), // Yeni eklenecek element
         eylemSecenekleri: document.getElementById('eylem-secenekleri'), metinParametreAlani: document.getElementById('metin-parametre-alani'),
         metinInput: document.getElementById('metin-input'), degiskenParametreAlani: document.getElementById('degisken-parametre-alani'),
         degiskenInput: document.getElementById('degisken-input'), modalOnaylaBtn: document.getElementById('modal-onayla-btn'),
@@ -92,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const adimIceriginiOlustur = (veri) => {
         let iS = '', dH = '', iR = 'var(--primary-color)', bM = false;
-        const v = veri.deger ? `<span class="eylem-degeri">${veri.deger}</span>` : '';
+        const v = veri.elementData && veri.elementData.selector ? `<span class="eylem-degeri">${veri.elementData.selector}</span>` : (veri.deger ? `<span class="eylem-degeri">${veri.deger}</span>` : '');
         switch (veri.tip) {
             case 'tıkla': iS = 'fa-solid fa-hand-pointer'; dH = `<b>${aktifDilMetinleri.eylemTikla}:</b> ${v}`; break;
             case 'yaz': iS = 'fa-solid fa-keyboard'; dH = `<b>${aktifDilMetinleri.eylemYaz}:</b> <span class="eylem-degeri">${veri.metin || ""}</span> <i>içine</i> ${v}`; break;
@@ -163,11 +164,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Modal Yönetimi ---
     const modalGoster = (ayarlar) => {
-        const { modalBaslik, modalOnaylaBtn, modalSeciciGosterim, eylemSecenekleri, metinParametreAlani, degiskenParametreAlani, metinInput, degiskenInput, eylemModalKonteyner } = tumElementReferanslari;
+        console.log("Popup: modalGoster called with settings:", ayarlar);
+        const { modalBaslik, modalOnaylaBtn, modalSeciciGosterim, modalElementDetaylari, eylemSecenekleri, metinParametreAlani, degiskenParametreAlani, metinInput, degiskenInput, eylemModalKonteyner } = tumElementReferanslari;
         aktifModalDurumu = ayarlar;
         modalBaslik.textContent = ayarlar.mod === 'duzenle' ? aktifDilMetinleri.modalDuzenleBaslik : aktifDilMetinleri.modalBaslik;
         modalOnaylaBtn.textContent = ayarlar.mod === 'duzenle' ? aktifDilMetinleri.degisiklikleriKaydet : aktifDilMetinleri.adimiEkle;
-        modalSeciciGosterim.textContent = ayarlar.secici;
+        
+        // Display element details
+        if (ayarlar.secici && typeof ayarlar.secici === 'object') {
+            modalSeciciGosterim.textContent = ayarlar.secici.selector;
+            let detailsHtml = `<b>Tag:</b> ${ayarlar.secici.tagName}`; 
+            if (ayarlar.secici.id) detailsHtml += `<br><b>ID:</b> ${ayarlar.secici.id}`;
+            if (ayarlar.secici.name) detailsHtml += `<br><b>Name:</b> ${ayarlar.secici.name}`;
+            if (ayarlar.secici.value !== null) detailsHtml += `<br><b>Value:</b> ${ayarlar.secici.value}`;
+            if (ayarlar.secici.textContent) detailsHtml += `<br><b>Text:</b> ${ayarlar.secici.textContent}`;
+            if (ayarlar.secici.placeholder) detailsHtml += `<br><b>Placeholder:</b> ${ayarlar.secici.placeholder}`;
+            modalElementDetaylari.innerHTML = detailsHtml;
+        } else {
+            modalSeciciGosterim.textContent = ayarlar.secici || '';
+            modalElementDetaylari.innerHTML = '';
+        }
+
         eylemSecenekleri.innerHTML = '';
         [metinParametreAlani, degiskenParametreAlani].forEach(el => el.style.display = 'none');
         metinInput.value = '';
@@ -201,7 +218,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const { metinInput, degiskenInput } = tumElementReferanslari;
         const yeniVeri = {
             tip: aktifModalDurumu.tip,
-            deger: aktifModalDurumu.secici,
+            deger: aktifModalDurumu.secici.selector, // Use the selector string for the 'deger' property
+            elementData: aktifModalDurumu.secici, // Store the full elementData object
             metin: metinInput.value,
             degisken: degiskenInput.value
         };
@@ -253,7 +271,8 @@ document.addEventListener('DOMContentLoaded', () => {
     senaryoCalistirBtn.addEventListener('click', () => {
         mevcutSenaryoyuKaydet();
         tumElementReferanslari.senaryoCalistirBtn.disabled = true;
-        chrome.runtime.sendMessage({ action: 'runScenario', scenarioId: appState.activeScenarioId });
+        // Pass the entire scenarios object to ensure background script has the latest data
+        chrome.runtime.sendMessage({ action: 'runScenario', scenarioId: appState.activeScenarioId, allScenarios: senaryolar });
     });
 
     adimEkleBtn.addEventListener('click', () => {
@@ -382,7 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Verileri ve durumu background script'ten al
         chrome.runtime.sendMessage({ action: 'getInitialData' }, (response) => {
             if (chrome.runtime.lastError) {
-                console.error(chrome.runtime.lastError.message);
+                console.error("Error getting initial data:", chrome.runtime.lastError.message);
                 return;
             }
             if(response) {
@@ -390,6 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 appState = response.appState;
                 metinleriUygula(response.language);
                 senaryoListesiniDoldur();
+                console.log("Popup: Initial appState received from background:", appState);
                 
                 // Kaydedilen durumu geri yükle
                 if (appState.currentView === 'editor' && appState.activeScenarioId && senaryolar[appState.activeScenarioId]) {
@@ -400,9 +420,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Bekleyen bir element seçici var mı kontrol et
                 if (appState.pendingSelector) {
+                    console.log("Popup: pendingSelector found, showing modal:", appState.pendingSelector);
                     modalGoster({ mod: 'ekle', secici: appState.pendingSelector });
-                    // Seçiciyi temizle
-                    chrome.runtime.sendMessage({ action: 'updateAppState', data: { pendingSelector: null } });
+                    // Seçiciyi temizle - modal gösterildikten sonra
+                    chrome.runtime.sendMessage({ action: 'updateAppState', data: { pendingSelector: null } }, (response) => {
+                        if (chrome.runtime.lastError) {
+                            console.error("Error clearing pending selector:", chrome.runtime.lastError.message);
+                        }
+                    });
                 }
             }
         });
