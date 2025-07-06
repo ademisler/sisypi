@@ -136,16 +136,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         selectElementByNumber: async () => {
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
             if (!tab || !tab.id) {
-                // sendResponse({ success: false, error: 'No active tab.' }); // Popup bu mesaja yanıt beklemiyor
+                sendResponse({ success: false, error: 'No active tab.' });
                 return;
             }
             try {
-                chrome.tabs.sendMessage(tab.id, { action: 'selectElementByNumber', elementNumber: request.elementNumber });
+                chrome.tabs.sendMessage(
+                    tab.id,
+                    { action: 'selectElementByNumber', elementNumber: request.elementNumber },
+                    () => {
+                        if (chrome.runtime.lastError) {
+                            sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                        } else {
+                            sendResponse({ success: true });
+                        }
+                    }
+                );
             } catch (e) {
                 console.error(`Background: Failed to send selectElementByNumber message to content script: ${e.message}`);
-                // Hata durumunda popup'a bilgi göndermek isterseniz burada bir mesaj gönderebilirsiniz.
+                sendResponse({ success: false, error: e.message });
             }
-            // return true; // Bu handler artık asenkron yanıt göndermiyor
+            return true;
         },
         elementSelectedFromContent: async () => {
             // content.js'ten gelen element verisini popup'a ilet
