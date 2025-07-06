@@ -112,6 +112,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse({ success: true });
         },
         elementSelected: async (request) => {
+            if (!request || !request.elementData) {
+                console.warn("Background: elementSelected called without elementData", request);
+                sendResponse({ success: false });
+                return;
+            }
             console.log("Background: Received elementSelected message with elementData:", request.elementData);
             const currentState = await getInitialAppState();
             // Safely access elementData, default to null if undefined

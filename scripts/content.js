@@ -37,7 +37,15 @@
             document.removeEventListener('click', secimModu.elementiSec, { capture: true });
         },
         elementiVurgula: (e) => {
-            const hedef = e.target;
+            const interactiveTags = ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A'];
+            let hedef = e.target;
+
+            const elementsAtPoint = document.elementsFromPoint(e.clientX, e.clientY);
+            const deeperInteractive = elementsAtPoint.find(el => interactiveTags.includes(el.tagName));
+            if (deeperInteractive) {
+                hedef = deeperInteractive;
+            }
+
             secimModu.vurgulamayiKaldir();
             hedef.classList.add('sisypi-secim-icin-vurgula');
             sonVurgulananElement = hedef;
@@ -52,20 +60,12 @@
             e.preventDefault();
             e.stopPropagation();
 
-            let targetElement = e.target;
-            // Try to find the closest interactive element
             const interactiveTags = ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A'];
-            
-            // Prioritize the clicked element itself if it's interactive
-            if (!interactiveTags.includes(targetElement.tagName) && targetElement.parentElement) {
-                let current = e.target.parentElement;
-                while (current && current !== document.body) {
-                    if (interactiveTags.includes(current.tagName)) {
-                        targetElement = current;
-                        break;
-                    }
-                    current = current.parentElement;
-                }
+            let targetElement = e.target;
+            const elementsAtPoint = document.elementsFromPoint(e.clientX, e.clientY);
+            const deeperInteractive = elementsAtPoint.find(el => interactiveTags.includes(el.tagName));
+            if (deeperInteractive) {
+                targetElement = deeperInteractive;
             }
 
             const secici = secimModu.cssSeciciOlustur(targetElement);
