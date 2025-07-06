@@ -345,7 +345,6 @@
                     };
                     chrome.runtime.sendMessage({ action: 'elementSelectedFromContent', elementData: elementData });
                     sendResponse({ success: true }); // background.js'e onay gönder
-                    secimModu.durdur();
                 } else {
                     sendResponse({ success: false, error: 'Geçersiz element numarası.' });
                 }

@@ -5,8 +5,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- DİL METİNLERİ (i18n) ---
     const lang = {
-        tr: { appTitle: "Sisypi", yeniSenaryo: "Yeni Senaryo Oluştur", tumunuYedekle: "Tümünü Yedekle", yedektenYukle: "Yedekten Yükle", geri: "Geri", calistir: "Çalıştır", kaydet: "Kaydet", urlKisitlamaEtiket: "URL Kısıtlaması (İsteğe Bağlı)", urlKisitlamaPlaceholder: "örn: google.com/maps", senaryoAdiPlaceholder: "Senaryo Adı", adimEkle: "Element Seçerek Adım Ekle", aracKutusu: "Araç Kutusu", aracBekle: "Bekle", aracYorum: "Yorum", aracGoruntu: "Görüntü", aracEger: "EĞER", aracDegilse: "DEĞİLSE", aracEgerBitti: "EĞER B.", aracDongu: "N Kez", aracDonguBitti: "DÖNGÜ B.", aracKaydir: "Kaydır", modalBaslik: "Eylemi Yapılandır", modalDuzenleBaslik: "Adımı Düzenle", modalHedefElement: "Hedef element:", modalNeYapmakIstersin: "Ne yapmak istersiniz?", modalYazilacakMetin: "Yazılacak Metin (Değişken için {{isim}} kullanın):", modalDegiskeneKaydet: "Kopyalanan değeri değişkene kaydet (isteğe bağlı):", modalDegiskenPlaceholder: "örn: kullaniciAdi", iptal: "İptal", adimiEkle: "Adımı Ekle", degisiklikleriKaydet: "Değişiklikleri Kaydet", eylemTikla: "Tıkla", eylemYaz: "Yaz", eylemKopyala: "Kopyala", senaryoSilOnay: "'{{baslik}}' senaryosunu silmek istediğinize emin misiniz?", yedekYukleOnay: "Mevcut tüm senaryolar silinecek ve yedekten gelenlerle değiştirilecek. Emin misiniz?", yedeklemeBasarili: "Geri yükleme başarılı!", gecersizJson: "Hata: Geçersiz JSON dosyası.", promptBekleme: "Bekleme süresi (ms):", promptYorum: "Yorum metni:", promptTekrar: "Tekrar sayısı:", promptIf: "Kontrol edilecek elementin seçicisi:", durumCalisiyor: "Senaryo çalıştırılıyor...", durumBasarili: "Senaryo başarıyla tamamlandı!", hataUrlUyusmuyor: "Hata: Senaryonun URL kısıtlaması ('{{kisitlama}}') mevcut sayfa adresiyle uyuşmuyor.", hataSeciciBulunamadi: "Seçici bulunamadı: {{secici}}", hataGenel: "Hata (Adım {{adim}}): {{mesaj}}", isimsizSenaryo: "İsimsiz Senaryo" },
-        en: { appTitle: "Sisypi", yeniSenaryo: "Create New Scenario", tumunuYedekle: "Backup All", yedektenYukle: "Restore from Backup", geri: "Back", calistir: "Run", kaydet: "Save", urlKisitlamaEtiket: "URL Constraint (Optional)", urlKisitlamaPlaceholder: "e.g., google.com/maps", senaryoAdiPlaceholder: "Scenario Name", adimEkle: "Add Step by Selecting Element", aracKutusu: "Toolbox", aracBekle: "Wait", aracYorum: "Comment", aracGoruntu: "Image", aracEger: "IF", aracDegilse: "ELSE", aracEgerBitti: "ENDIF", aracDongu: "N Times", aracDonguBitti: "ENDL", aracKaydir: "Scroll", modalBaslik: "Configure Action", modalDuzenleBaslik: "Edit Step", modalHedefElement: "Target element:", modalNeYapmakIstersin: "What would you like to do?", modalYazilacakMetin: "Text to type (use {{name}} for variables):", modalDegiskeneKaydet: "Save copied value to a variable (optional):", modalDegiskenPlaceholder: "e.g., userName", iptal: "Cancel", adimiEkle: "Add Step", degisiklikleriKaydet: "Save Changes", eylemTikla: "Click", eylemYaz: "Type", eylemKopyala: "Copy", senaryoSilOnay: "Are you sure you want to delete the '{{baslik}}' scenario?", yedekYukleOnay: "All current scenarios will be deleted and replaced with the backup. Are you sure?", yedeklemeBasarili: "Restore successful!", gecersizJson: "Error: Invalid JSON file.", promptBekleme: "Wait duration (ms):", promptYorum: "Comment text:", promptTekrar: "Number of repetitions:", promptIf: "Selector of the element to check:", durumCalisiyor: "Scenario running...", durumBasarili: "Scenario completed successfully!", hataUrlUyusmuyor: "Error: Scenario's URL constraint ('{{kisitlama}}') does not match the current page URL.", hataSeciciBulunamadi: "Selector not found: {{secici}}", hataGenel: "Error (Step {{adim}}): {{mesaj}}", isimsizSenaryo: "Untitled Scenario", elementSecimBaslik: "Element Selection", elementSecimAciklama: "Please enter the number of the element marked on the page:", sec: "Select" }
+        tr: { appTitle: "Sisypi", yeniSenaryo: "Yeni Senaryo Oluştur", tumunuYedekle: "Tümünü Yedekle", yedektenYukle: "Yedekten Yükle", geri: "Geri", calistir: "Çalıştır", kaydet: "Kaydet", urlKisitlamaEtiket: "URL Kısıtlaması (İsteğe Bağlı)", urlKisitlamaPlaceholder: "örn: google.com/maps", senaryoAdiPlaceholder: "Senaryo Adı", adimEkle: "Element Seçerek Adım Ekle", aracKutusu: "Araç Kutusu", aracBekle: "Bekle", aracYorum: "Yorum", aracGoruntu: "Görüntü", aracEger: "EĞER", aracDegilse: "DEĞİLSE", aracEgerBitti: "EĞER B.", aracDongu: "N Kez", aracDonguBitti: "DÖNGÜ B.", aracKaydir: "Kaydır", modalBaslik: "Eylemi Yapılandır", modalDuzenleBaslik: "Adımı Düzenle", modalHedefElement: "Hedef element:", modalNeYapmakIstersin: "Ne yapmak istersiniz?", modalYazilacakMetin: "Yazılacak Metin (Değişken için {{isim}} kullanın):", modalDegiskeneKaydet: "Kopyalanan değeri değişkene kaydet (isteğe bağlı):", modalDegiskenPlaceholder: "örn: kullaniciAdi", iptal: "İptal", adimiEkle: "Adımı Ekle", degisiklikleriKaydet: "Değişiklikleri Kaydet", eylemTikla: "Tıkla", eylemYaz: "Yaz", eylemKopyala: "Kopyala", senaryoSilOnay: "'{{baslik}}' senaryosunu silmek istediğinize emin misiniz?", yedekYukleOnay: "Mevcut tüm senaryolar silinecek ve yedekten gelenlerle değiştirilecek. Emin misiniz?", yedeklemeBasarili: "Geri yükleme başarılı!", gecersizJson: "Hata: Geçersiz JSON dosyası.", promptBekleme: "Bekleme süresi (ms):", promptYorum: "Yorum metni:", promptTekrar: "Tekrar sayısı:", promptIf: "Kontrol edilecek elementin seçicisi:", durumCalisiyor: "Senaryo çalıştırılıyor...", durumBasarili: "Senaryo başarıyla tamamlandı!", hataUrlUyusmuyor: "Hata: Senaryonun URL kısıtlaması ('{{kisitlama}}') mevcut sayfa adresiyle uyuşmuyor.", hataSeciciBulunamadi: "Seçici bulunamadı: {{secici}}", hataGenel: "Hata (Adım {{adim}}): {{mesaj}}", isimsizSenaryo: "İsimsiz Senaryo", elementSecimBaslik: "Element Seçimi", elementSecimAciklama: "Lütfen sayfada işaretlenen elementin numarasını girin:", sec: "Seç", elementSecimBasarisiz: "Element seçimi başarısız oldu. Belirtilen numarada bir element bulunamadı." },
+        en: { appTitle: "Sisypi", yeniSenaryo: "Create New Scenario", tumunuYedekle: "Backup All", yedektenYukle: "Restore from Backup", geri: "Back", calistir: "Run", kaydet: "Save", urlKisitlamaEtiket: "URL Constraint (Optional)", urlKisitlamaPlaceholder: "e.g., google.com/maps", senaryoAdiPlaceholder: "Scenario Name", adimEkle: "Add Step by Selecting Element", aracKutusu: "Toolbox", aracBekle: "Wait", aracYorum: "Comment", aracGoruntu: "Image", aracEger: "IF", aracDegilse: "ELSE", aracEgerBitti: "ENDIF", aracDongu: "N Times", aracDonguBitti: "ENDL", aracKaydir: "Scroll", modalBaslik: "Configure Action", modalDuzenleBaslik: "Edit Step", modalHedefElement: "Target element:", modalNeYapmakIstersin: "What would you like to do?", modalYazilacakMetin: "Text to type (use {{name}} for variables):", modalDegiskeneKaydet: "Save copied value to a variable (optional):", modalDegiskenPlaceholder: "e.g., userName", iptal: "Cancel", adimiEkle: "Add Step", degisiklikleriKaydet: "Save Changes", eylemTikla: "Click", eylemYaz: "Type", eylemKopyala: "Copy", senaryoSilOnay: "Are you sure you want to delete the '{{baslik}}' scenario?", yedekYukleOnay: "All current scenarios will be deleted and replaced with the backup. Are you sure?", yedeklemeBasarili: "Restore successful!", gecersizJson: "Error: Invalid JSON file.", promptBekleme: "Wait duration (ms):", promptYorum: "Comment text:", promptTekrar: "Number of repetitions:", promptIf: "Selector of the element to check:", durumCalisiyor: "Scenario running...", durumBasarili: "Scenario completed successfully!", hataUrlUyusmuyor: "Error: Scenario's URL constraint ('{{kisitlama}}') does not match the current page URL.", hataSeciciBulunamadi: "Selector not found: {{secici}}", hataGenel: "Error (Step {{adim}}): {{mesaj}}", isimsizSenaryo: "Untitled Scenario", elementSecimBaslik: "Element Selection", elementSecimAciklama: "Please enter the number of the element marked on the page:", sec: "Select", elementSecimBasarisiz: "Element selection failed. Could not find an element with the specified number." }
     };
 
     // --- UYGULAMA DURUMU & VERİLER (POPUP'A ÖZEL) ---
@@ -297,6 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
     modalOnaylaBtn.addEventListener('click', modalEyleminiOnayla);
     modalIptalBtn.addEventListener('click', modaliKapat);
 
+    // [DEĞİŞİKLİK 1] elementSecimOnaylaBtn olay dinleyicisi güncellendi.
     tumElementReferanslari.elementSecimOnaylaBtn.addEventListener('click', () => {
         const elementNumber = parseInt(tumElementReferanslari.elementNumarasiInput.value, 10);
         if (!isNaN(elementNumber) && elementNumber > 0) {
@@ -304,10 +305,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (chrome.runtime.lastError) {
                     console.error("Error sending selectElementByNumber message:", chrome.runtime.lastError.message);
                     alert("Element seçimi sırasında bir hata oluştu.");
-                } else if (!response.success) {
-                    alert(response.error || "Element seçimi başarısız oldu.");
+                    return;
                 }
-                // elementSecimModalKapat(); // Bu çağrı elementSelected mesajı alındığında yapılacak
+
+                if (response && response.success && response.elementData) {
+                    // Başarılı yanıt geldi, veriyi kullanarak ilgili modal'ı aç
+                    elementSecimModalKapat();
+                    modalGoster({ mod: 'ekle', secici: response.elementData });
+                } else {
+                    // Background script bir hata bildirdi veya veri göndermedi
+                    alert(response.error || aktifDilMetinleri.elementSecimBasarisiz);
+                }
             });
         } else {
             alert("Lütfen geçerli bir element numarası girin.");
@@ -414,6 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
     dilEnBtn.addEventListener('click', () => changeLanguage('en'));
 
     // --- ARKA PLAN SCRIPT'İNDEN GELEN MESAJLARI DİNLE ---
+    // [DEĞİŞİKLİK 2] 'elementSelected' mesaj dinleyicisi kaldırıldı.
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (request.action === 'updateRunStatus') {
             const { type, messageKey, params } = request.status;
@@ -427,9 +436,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if(type !== 'calisiyor'){
                 tumElementReferanslari.senaryoCalistirBtn.disabled = false;
             }
-        } else if (request.action === 'elementSelected') {
-            elementSecimModalKapat();
-            modalGoster({ mod: 'ekle', secici: request.elementData });
         }
     });
 

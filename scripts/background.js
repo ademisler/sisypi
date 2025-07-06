@@ -1,265 +1,195 @@
-// --- EKLENTİNİN BEYNİ: ARKA PLAN SERVİSİ (SERVICE WORKER) ---
-// Tüm veri yönetimi ve iş mantığı burada merkezileştirilmiştir.
+// --- BACKGROUND SERVICE WORKER ---
+// Bu betik, eklentinin beynidir. Tüm durumları yönetir, depolama işlemlerini yapar
+// ve popup ile içerik betikleri (content scripts) arasındaki iletişimi koordine eder.
 
-/**
- * Uygulamanın varsayılan durumunu ve verilerini yönetir.
- */
-const getInitialAppState = async () => {
-    const data = await chrome.storage.local.get('sisypi_appState');
-    return data.sisypi_appState || { currentView: 'main', activeScenarioId: null };
+// --- UYGULAMA DURUMU (STATE) ---
+let scenarios = {};
+let appState = {
+  currentView: 'main',      // 'main' or 'editor'
+  activeScenarioId: null,
+  language: 'tr'
+};
+let activeSelectionTabId = null;
+
+// --- YARDIMCI FONKSİYONLAR ---
+const loadInitialData = async () => {
+    const data = await chrome.storage.local.get(['scenarios', 'appState']);
+    scenarios = data.scenarios || {};
+    appState = {
+        currentView: 'main',
+        activeScenarioId: null,
+        language: (data.appState && data.appState.language) || 'tr'
+    };
+    console.log("Background: Initial data loaded.", { scenarios, appState });
 };
 
-// Eklenti ilk kurulduğunda veya güncellendiğinde çalışır.
-chrome.runtime.onInstalled.addListener(async (details) => {
-    if (details.reason === 'install') {
-        // Depolamayı kontrol et, eğer boşsa varsayılanları ekle.
-        const data = await chrome.storage.local.get(['sisypi_scenarios', 'sisypi_lang', 'sisypi_appState']);
-        if (!data.sisypi_scenarios) {
-            const defaultScenarios = {
-                'ornek-1': { id: 'ornek-1', baslik: "Veri Kopyalama Örneği", urlKisitlamasi: "", adimlar: [{ tip: 'comment', metin: 'Sayfadaki bir başlığı değişkene ata ve kullan.' }, { tip: 'kopyala', deger: 'h1', degisken: 'sayfaBasligi' }, { tip: 'wait', ms: '500' }, { tip: 'comment', metin: 'Bu adım normalde bir inputa yazardı, ama şimdilik bir alert gösteriyor: {{sayfaBasligi}}' }] },
-                'ornek-2': { id: 'ornek-2', baslik: "Koşullu İşlem (EĞER/DEĞİLSE)", urlKisitlamasi: "", adimlar: [{ tip: 'comment', metin: 'Sayfada olmayan bir elementi kontrol et.' }, { tip: 'if_start', deger: '#yok-boyle-bir-element' }, { tip: 'comment', metin: 'Bu adım çalışmamalı (EĞER bloğu).' }, { tip: 'else_block' }, { tip: 'comment', metin: 'Bu adım çalışmalı (DEĞİLSE bloğu).' }, { tip: 'if_end' }] },
-                'ornek-3': { id: 'ornek-3', baslik: "Döngü ve Hata Yakalama", urlKisitlamasi: "", adimlar: [{ tip: 'comment', metin: 'Bu döngü, var olmayan butonlara tıklamaya çalışacak ve hata verecektir.' }, { tip: 'loop_start', sayi: '4' }, { tip: 'tıkla', deger: 'button#yok-boyle-bir-buton-{{dongu_indeksi}}' }, { tip: 'wait', ms: '200' }, { tip: 'loop_end' }] }
-            };
-            await chrome.storage.local.set({ sisypi_scenarios: defaultScenarios });
-        }
-        if (!data.sisypi_lang) {
-            await chrome.storage.local.set({ sisypi_lang: 'tr' });
-        }
-        if(!data.sisypi_appState) {
-            await chrome.storage.local.set({ sisypi_appState: { currentView: 'main', activeScenarioId: null } });
-        }
-    }
-});
+const saveScenarios = async (newScenarios) => {
+    scenarios = newScenarios;
+    await chrome.storage.local.set({ scenarios });
+};
 
-// Popup veya Content Script'lerden gelen mesajları dinler.
+const saveAppState = async () => {
+    await chrome.storage.local.set({ appState });
+};
+
+const sendStatusUpdateToPopup = (status) => {
+    chrome.runtime.sendMessage({ action: 'updateRunStatus', status: status }).catch(e => console.log("Popup is not open to receive status update."));
+};
+
+
+// --- MESAJ DİNLEYİCİSİ ---
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    // Mesajları asenkron olarak işlemek için 'true' döndürmek önemlidir.
-    const actionHandlers = {
-        getInitialData: async () => {
-            const scenariosData = await chrome.storage.local.get('sisypi_scenarios');
-            const langData = await chrome.storage.local.get('sisypi_lang');
-            const appState = await getInitialAppState();
-            console.log("Background: Sending initial appState to popup:", appState);
-            sendResponse({
-                scenarios: scenariosData.sisypi_scenarios || {},
-                language: langData.sisypi_lang || 'tr',
-                appState: appState
-            });
-        },
-        saveScenarios: async () => {
-            await chrome.storage.local.set({ sisypi_scenarios: request.data });
-            sendResponse({ success: true });
-        },
-        saveLanguage: async () => {
-            await chrome.storage.local.set({ sisypi_lang: request.data });
-            sendResponse({ success: true });
-        },
-        updateAppState: async () => {
-            const currentState = await getInitialAppState();
-            const newState = { ...currentState, ...request.data };
-            await chrome.storage.local.set({ sisypi_appState: newState });
-            sendResponse({ success: true });
-        },
-        runScenario: async () => {
-            const scenarios = request.allScenarios || (await chrome.storage.local.get('sisypi_scenarios')).sisypi_scenarios;
-            const scenario = scenarios[request.scenarioId];
-            if (!scenario) {
-                sendResponse({ success: false, error: 'Scenario not found' });
-                return;
-            }
+    console.log("Background received message:", request);
+    let isAsync = false;
 
-            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            if (scenario.urlKisitlamasi && !tab.url.includes(scenario.urlKisitlamasi)) {
-                chrome.runtime.sendMessage({
-                    action: 'updateRunStatus',
-                    status: {
-                        type: 'hata',
-                        messageKey: 'hataUrlUyusmuyor',
-                        params: { kisitlama: scenario.urlKisitlamasi }
-                    }
-                });
-                sendResponse({ success: false, error: 'URL mismatch' });
-                return;
-            }
+    switch (request.action) {
+        case 'getInitialData':
+            isAsync = true;
+            loadInitialData().then(() => {
+                sendResponse({ scenarios, appState, language: appState.language });
+            });
+            break;
+
+        case 'saveScenarios':
+            isAsync = true;
+            saveScenarios(request.data).then(() => sendResponse({ success: true }));
+            break;
             
-            await injectContentScript(tab.id);
-            chrome.tabs.sendMessage(tab.id, {
-                action: 'executeScenario',
-                steps: scenario.adimlar
-            }, (response) => {
-                 if (chrome.runtime.lastError) {
-                    console.error("Background: Error sending executeScenario message:", chrome.runtime.lastError.message);
-                    chrome.runtime.sendMessage({
-                        action: 'updateRunStatus',
-                        status: {
-                            type: 'hata',
-                            messageKey: 'hataGenel',
-                            params: { adim: 'Senaryo Çalıştırma', mesaj: chrome.runtime.lastError.message }
-                        }
-                    });
-                 }
-            });
-            sendResponse({ success: true });
-        },
-        startSelection: async () => {
-            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            if (!tab || !tab.id) {
-                chrome.runtime.sendMessage({
-                    action: 'updateRunStatus',
-                    status: {
-                        type: 'hata',
-                        messageKey: 'hataGenel',
-                        params: { adim: 'Seçim Modu', mesaj: 'İçerik betiği bu sayfaya enjekte edilemiyor. Lütfen normal bir web sayfasında deneyin.' }
-                    }
-                });
-                sendResponse({ success: false, error: 'Cannot inject content script on this page.' });
-                return;
-            }
-            await injectContentScript(tab.id);
-            chrome.tabs.sendMessage(tab.id, { action: 'startSelection' }, (response) => {
-                 if (chrome.runtime.lastError) {
-                    console.error("Background: Error sending startSelection message:", chrome.runtime.lastError.message);
-                    chrome.runtime.sendMessage({
-                        action: 'updateRunStatus',
-                        status: {
-                            type: 'hata',
-                            messageKey: 'hataGenel',
-                            params: { adim: 'Seçim Modu Başlatma', mesaj: chrome.runtime.lastError.message }
-                        }
-                    });
-                 } else {
-                    activeSelectionTabId = tab.id; // Seçim modunun başladığı sekme ID'sini kaydet
-                    console.log("Background: activeSelectionTabId set to", activeSelectionTabId);
-                 }
-            });
-        },
-        selectElementByNumber: async () => {
-            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            if (!tab || !tab.id) {
-                sendResponse({ success: false, error: 'No active tab.' });
-                return;
-            }
-            try {
-                chrome.tabs.sendMessage(
-                    tab.id,
-                    { action: 'selectElementByNumber', elementNumber: request.elementNumber },
-                    () => {
+        case 'saveLanguage':
+            appState.language = request.data;
+            saveAppState();
+            break;
+
+        case 'updateAppState':
+            appState = { ...appState, ...request.data };
+            break;
+
+        // [GÜNCELLEME] Bu kısım, seçimi başlatma komutunu doğru gönderecek şekilde düzeltildi.
+        case 'startSelection':
+            isAsync = true;
+            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                if (!tabs || tabs.length === 0) {
+                    console.error("No active tab found.");
+                    sendResponse({ success: false, error: "Aktif sekme bulunamadı." });
+                    return;
+                }
+                const tabId = tabs[0].id;
+                activeSelectionTabId = tabId;
+
+                // Önce scriptleri ve CSS'i enjekte et
+                Promise.all([
+                    chrome.scripting.insertCSS({ target: { tabId }, files: ['content/selection.css'] }),
+                    chrome.scripting.executeScript({
+                        target: { tabId },
+                        files: ['content/selector_generator.js', 'content/content_script.js']
+                    })
+                ]).then(() => {
+                    // Enjeksiyon başarılı olduktan SONRA, seçimi başlatması için komut gönder
+                    chrome.tabs.sendMessage(tabId, { action: 'initiateSelection' }, (response) => {
                         if (chrome.runtime.lastError) {
-                            sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                            console.error("Could not initiate selection:", chrome.runtime.lastError.message);
+                            sendResponse({ success: false, error: "Sayfa ile iletişim kurulamadı." });
                         } else {
+                            console.log("Selection initiated on content script.");
                             sendResponse({ success: true });
+                        }
+                    });
+                }).catch(err => {
+                    console.error("Failed to inject script or CSS:", err);
+                    sendResponse({ success: false, error: `Script enjekte edilemedi: ${err.message}` });
+                });
+            });
+            break;
+
+        case 'selectElementByNumber':
+            isAsync = true;
+            if (activeSelectionTabId) {
+                chrome.tabs.sendMessage(
+                    activeSelectionTabId,
+                    { action: 'getElementDataByNumber', elementNumber: request.elementNumber },
+                    (response) => {
+                        if (chrome.runtime.lastError) {
+                            sendResponse({ success: false, error: "Content script ile iletişim kurulamadı." });
+                        } else {
+                            sendResponse(response);
                         }
                     }
                 );
-            } catch (e) {
-                console.error(`Background: Failed to send selectElementByNumber message to content script: ${e.message}`);
-                sendResponse({ success: false, error: e.message });
+            } else {
+                sendResponse({ success: false, error: "Aktif seçim sekmesi bulunamadı." });
             }
-            return true;
-        },
-        elementSelectedFromContent: async () => {
-            // content.js'ten gelen element verisini popup'a ilet
-            chrome.runtime.sendMessage({ action: 'elementSelected', elementData: request.elementData });
-        },
-        stopSelection: async () => {
-            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            if (!tab || !tab.id) {
-                sendResponse({ success: false, error: 'No active tab.' });
-                return;
+            break;
+
+        case 'stopSelection':
+             if (activeSelectionTabId) {
+                chrome.tabs.sendMessage(activeSelectionTabId, { action: 'cleanupSelectionUI' }, () => {
+                    chrome.runtime.lastError;
+                });
+                activeSelectionTabId = null;
             }
-            chrome.tabs.sendMessage(tab.id, { action: 'stopSelection' }, (response) => {
-                if (chrome.runtime.lastError) {
-                    console.error("Background: Error sending stopSelection message:", chrome.runtime.lastError.message);
-                    chrome.runtime.sendMessage({
-                        action: 'updateRunStatus',
-                        status: {
-                            type: 'hata',
-                            messageKey: 'hataGenel',
-                            params: { adim: 'Seçim Modu Durdurma', mesaj: chrome.runtime.lastError.message }
-                        }
-                    });
-                } else {
-                    activeSelectionTabId = null; // Seçim modunun durduğu sekme ID'sini temizle
-                    console.log("Background: activeSelectionTabId cleared (stopSelection).");
-                }
-            });
-        },
-        updateRunStatus: () => {
-            // Content script'ten gelen durumu popup'a iletiyoruz.
-            chrome.runtime.sendMessage({ action: 'updateRunStatus', status: request.status });
-        },
-        backupAll: async () => {
-            const { sisypi_scenarios } = await chrome.storage.local.get('sisypi_scenarios');
-            const dataStr = JSON.stringify(sisypi_scenarios || {}, null, 2);
-            const blob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
+            break;
             
-            chrome.downloads.download({
-                url: url,
-                filename: `sisypi_yedek_${new Date().toISOString().slice(0, 10)}.json`,
-                saveAs: true
-            }, () => {
-                URL.revokeObjectURL(url); // Bellek sızıntısını önle
+        case 'runScenario':
+            isAsync = true;
+            const scenario = request.allScenarios[request.scenarioId];
+            if (!scenario) {
+                sendStatusUpdateToPopup({ type: 'hata', messageKey: 'hataGenel', params: { adim: 'N/A', mesaj: 'Senaryo bulunamadı.' } });
+                sendResponse({ success: false });
+                break;
+            }
+            
+            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                const tab = tabs[0];
+                
+                if (scenario.urlKisitlamasi && !tab.url.includes(scenario.urlKisitlamasi)) {
+                    sendStatusUpdateToPopup({ type: 'hata', messageKey: 'hataUrlUyusmuyor', params: { kisitlama: scenario.urlKisitlamasi } });
+                    sendResponse({ success: false });
+                    return;
+                }
+                
+                chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    files: ['content/selector_generator.js', 'content/content_script.js']
+                }).then(() => {
+                     chrome.tabs.sendMessage(tab.id, { action: 'executeScenario', steps: scenario.adimlar }, (response) => {
+                        if(chrome.runtime.lastError){
+                             sendStatusUpdateToPopup({ type: 'hata', messageKey: 'hataGenel', params: { adim: 0, mesaj: "Sayfa ile iletişim kurulamadı. Sayfayı yenileyip tekrar deneyin." } });
+                        }
+                     });
+                     sendResponse({ success: true });
+                }).catch(err => {
+                     sendStatusUpdateToPopup({ type: 'hata', messageKey: 'hataGenel', params: { adim: 0, mesaj: `Script enjekte edilemedi: ${err.message}` } });
+                     sendResponse({ success: false });
+                });
             });
-        },
-        restoreFromBackup: async () => {
-            await chrome.storage.local.set({ sisypi_scenarios: request.data });
-            sendResponse({ success: true, scenarios: request.data });
-        }
-    };
-    
-    const handler = actionHandlers[request.action];
-    if (handler) {
-        handler();
-        return true; // Asenkron yanıt için
+            break;
+            
+        case 'updateRunStatus':
+            sendStatusUpdateToPopup(request.status);
+            break;
+
+        case 'backupAll':
+            loadInitialData().then(() => {
+                const dataStr = JSON.stringify(scenarios, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                chrome.downloads.download({
+                    url: url,
+                    filename: `sisypi_yedek_${new Date().toISOString().slice(0, 10)}.json`
+                });
+            });
+            break;
+
+        case 'restoreFromBackup':
+            isAsync = true;
+            saveScenarios(request.data).then(() => {
+                sendResponse({ success: true, scenarios: request.data });
+            });
+            break;
     }
+
+    return isAsync;
 });
 
-
-// Helper function to inject content script if not already present
-async function injectContentScript(tabId) {
-    try {
-        const [{ result }] = await chrome.scripting.executeScript({
-            target: { tabId: tabId },
-            func: () => window.sisypiContentScriptInjected,
-        });
-        if (result) return; // Zaten enjekte edilmiş
-
-        await chrome.scripting.executeScript({
-            target: { tabId: tabId },
-            files: ['scripts/content.js'],
-        });
-    } catch (e) {
-        // console.error(`Failed to inject script: ${e}`);
-        // Farklı origin'deki sayfalara (chrome://, file://) enjekte edilemez.
-    }
-}
-
-// Sekme değiştiğinde veya güncellendiğinde seçim modunu durdur
-let activeSelectionTabId = null;
-
-chrome.tabs.onActivated.addListener(async (activeInfo) => {
-    if (activeSelectionTabId && activeSelectionTabId !== activeInfo.tabId) {
-        // Eski sekmede seçim modunu durdur
-        try {
-            await chrome.tabs.sendMessage(activeSelectionTabId, { action: 'stopSelection' });
-        } catch (e) {
-            // Sekme kapanmış veya içerik betiği artık aktif değilse hata oluşabilir.
-            console.warn("Background: Error stopping selection on old tab:", e.message);
-        }
-        activeSelectionTabId = null;
-        console.log("Background: activeSelectionTabId cleared (onActivated).");
-    }
-});
-
-chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-    if (activeSelectionTabId === tabId && changeInfo.status === 'loading') {
-        // Sekme yeniden yükleniyor veya yeni bir sayfaya gidiyor, seçim modunu durdur
-        try {
-            await chrome.tabs.sendMessage(tabId, { action: 'stopSelection' });
-        } catch (e) {
-            console.warn("Background: Error stopping selection on updated tab:", e.message);
-        }
-        activeSelectionTabId = null;
-    }
-});
+chrome.runtime.onStartup.addListener(loadInitialData);
+loadInitialData();
