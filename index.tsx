@@ -5,12 +5,216 @@ import './popup/popup.css';
 // Import our new architecture components
 import { AppProvider, useApp } from './src/context/AppContext';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
-import { AISettings } from './src/components/AISettings';
+// AISettings will be defined inline
 import type { AutomationStep, StepType, Scenario } from './src/types';
 import { UI_TEXT, APP_CONFIG, STEP_CONFIGS } from './src/constants';
 import { getStepDisplayInfo } from './src/utils';
 import { validateScenario } from './src/validation/validators';
-import { aiService } from './src/services/ai-service';
+// AI Service will be imported in components directly
+
+// === AI SETTINGS MODAL ===
+interface AISettingsModalProps {
+  onClose: () => void;
+}
+
+const AISettingsModal: React.FC<AISettingsModalProps> = ({ onClose }) => {
+  const [apiKey, setApiKey] = React.useState('');
+  const [isTestingConnection, setIsTestingConnection] = React.useState(false);
+  const [connectionStatus, setConnectionStatus] = React.useState<'idle' | 'success' | 'error'>('idle');
+  const [isEnabled, setIsEnabled] = React.useState(false);
+
+  React.useEffect(() => {
+    chrome.storage.local.get(['aiApiKey', 'aiEnabled']).then((result) => {
+      if (result.aiApiKey) {
+        setApiKey(result.aiApiKey);
+      }
+      setIsEnabled(result.aiEnabled || false);
+    });
+  }, []);
+
+  const handleSaveSettings = async () => {
+    try {
+      await chrome.storage.local.set({ 
+        aiApiKey: apiKey,
+        aiEnabled: isEnabled 
+      });
+      alert('AI settings saved successfully!');
+    } catch (error) {
+      alert('Failed to save AI settings');
+    }
+  };
+
+  const handleTestConnection = async () => {
+    if (!apiKey) {
+      alert('Please enter an API key first');
+      return;
+    }
+
+    setIsTestingConnection(true);
+    setConnectionStatus('idle');
+
+    try {
+      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-goog-api-key': apiKey
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: 'Test connection. Respond with "OK".' }]
+          }]
+        })
+      });
+
+      const isConnected = response.ok;
+      setConnectionStatus(isConnected ? 'success' : 'error');
+      
+      if (isConnected) {
+        alert('✅ AI connection successful!');
+      } else {
+        alert('❌ AI connection failed. Please check your API key.');
+      }
+    } catch (error) {
+      setConnectionStatus('error');
+      alert('❌ Connection test failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setIsTestingConnection(false);
+    }
+  };
+
+  const handleGetApiKey = () => {
+    window.open('https://aistudio.google.com/app/apikey', '_blank');
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content" style={{ maxWidth: '500px' }}>
+        <div className="modal-header">
+          <h3>🤖 AI Settings</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fa-solid fa-times"></i>
+          </button>
+        </div>
+
+        <div className="modal-body">
+          <div className="form-group">
+            <label className="form-label">
+              <i className="fa-solid fa-robot"></i>
+              Enable AI-Powered Features
+            </label>
+            <div style={{ margin: '8px 0' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="checkbox"
+                  checked={isEnabled}
+                  onChange={(e) => setIsEnabled(e.target.checked)}
+                />
+                Enable AI features
+              </label>
+            </div>
+            <p className="form-help">
+              Enable AI-powered element analysis and automation suggestions
+            </p>
+          </div>
+
+          {isEnabled && (
+            <>
+              <div className="form-group">
+                <label className="form-label">
+                  <i className="fa-solid fa-key"></i>
+                  Google Gemini API Key
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="password"
+                    className="form-input"
+                    placeholder="AIzaSyC... (Google Gemini API Key)"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    style={{ fontFamily: 'monospace', flex: 1 }}
+                  />
+                  <button 
+                    className="btn btn-secondary"
+                    onClick={handleGetApiKey}
+                    title="Get API Key"
+                  >
+                    <i className="fa-solid fa-external-link"></i>
+                  </button>
+                </div>
+                <p className="form-help">
+                  Get your free API key from Google AI Studio. Your key is stored locally and never shared.
+                </p>
+              </div>
+
+              <div className="form-group">
+                <button
+                  className={`btn ${connectionStatus === 'success' ? 'btn-success' : connectionStatus === 'error' ? 'btn-danger' : 'btn-secondary'}`}
+                  onClick={handleTestConnection}
+                  disabled={isTestingConnection || !apiKey}
+                >
+                  {isTestingConnection ? (
+                    <>
+                      <i className="fa-solid fa-spinner fa-spin"></i>
+                      Testing Connection...
+                    </>
+                  ) : connectionStatus === 'success' ? (
+                    <>
+                      <i className="fa-solid fa-check"></i>
+                      Connection Successful
+                    </>
+                  ) : connectionStatus === 'error' ? (
+                    <>
+                      <i className="fa-solid fa-times"></i>
+                      Connection Failed
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-plug"></i>
+                      Test Connection
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', padding: '16px', marginTop: '16px' }}>
+                <h4 style={{ margin: '0 0 12px 0' }}>🌟 AI Features</h4>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                    <i className="fa-solid fa-mouse-pointer" style={{ color: 'var(--primary-color)', width: '16px' }}></i>
+                    <div><strong>Smart Element Selection:</strong> Click elements instead of numbers</div>
+                  </li>
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                    <i className="fa-solid fa-brain" style={{ color: 'var(--primary-color)', width: '16px' }}></i>
+                    <div><strong>Intelligent Selectors:</strong> AI generates reliable CSS selectors</div>
+                  </li>
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                    <i className="fa-solid fa-magic-wand-sparkles" style={{ color: 'var(--primary-color)', width: '16px' }}></i>
+                    <div><strong>Automation Suggestions:</strong> AI suggests complete workflows</div>
+                  </li>
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0' }}>
+                    <i className="fa-solid fa-shield-check" style={{ color: 'var(--primary-color)', width: '16px' }}></i>
+                    <div><strong>Robust Automation:</strong> Self-healing selectors and fallbacks</div>
+                  </li>
+                </ul>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="modal-footer">
+          <button className="btn btn-ghost" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="btn btn-primary" onClick={handleSaveSettings}>
+            <i className="fa-solid fa-save"></i>
+            Save Settings
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // === MAIN APP COMPONENT ===
 const App: React.FC = () => {
@@ -22,9 +226,7 @@ const App: React.FC = () => {
   React.useEffect(() => {
     chrome.storage.local.get(['aiEnabled', 'aiApiKey']).then((result) => {
       setIsAIEnabled(result.aiEnabled || false);
-      if (result.aiApiKey) {
-        aiService.setApiKey(result.aiApiKey);
-      }
+      console.log('AI Settings loaded:', { enabled: result.aiEnabled, hasKey: !!result.aiApiKey });
     });
   }, []);
 
@@ -115,7 +317,7 @@ const App: React.FC = () => {
       </div>
 
       {showAISettings && (
-        <AISettings onClose={() => setShowAISettings(false)} />
+        <AISettingsModal onClose={() => setShowAISettings(false)} />
       )}
     </div>
   );
@@ -143,7 +345,7 @@ interface HeaderProps {
   onBack: () => void;
   onBackupAll: () => void;
   onLoadBackup: () => void;
-  onAISettings?: () => void;
+  onAISettings: () => void;
   onAISelection?: () => void;
   isAIEnabled?: boolean;
 }
@@ -168,11 +370,9 @@ const Header: React.FC<HeaderProps> = ({ view, onBack, onBackupAll, onLoadBackup
           <button className="btn btn-ghost" onClick={onBackupAll} title={UI_TEXT.TOOLTIP_BACKUP}>
             <i className="fa-solid fa-download"></i>
           </button>
-          {onAISettings && (
-            <button className="btn btn-ghost" onClick={onAISettings} title="AI Settings">
-              <i className="fa-solid fa-robot"></i>
-            </button>
-          )}
+          <button className="btn btn-ghost" onClick={onAISettings} title="AI Settings">
+            <i className="fa-solid fa-cog"></i>
+          </button>
         </>
       ) : (
         <button className="btn btn-ghost" onClick={onBack}>

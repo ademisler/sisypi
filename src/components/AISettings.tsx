@@ -1,5 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import { aiService } from '../services/ai-service';
+
+// AI Service for Gemini API
+class AIService {
+  private apiKey: string = '';
+  private baseUrl: string = 'https://generativelanguage.googleapis.com/v1beta/models';
+  private model: string = 'gemini-2.0-flash';
+
+  setApiKey(apiKey: string): void {
+    this.apiKey = apiKey;
+  }
+
+  async testConnection(): Promise<boolean> {
+    if (!this.apiKey) {
+      return false;
+    }
+
+    try {
+      const response = await fetch(`${this.baseUrl}/${this.model}:generateContent`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-goog-api-key': this.apiKey
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: 'Test connection. Respond with "OK".' }]
+          }]
+        })
+      });
+
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+}
+
+const aiService = new AIService();
 
 interface AISettingsProps {
   onClose: () => void;
@@ -115,9 +152,10 @@ export const AISettings: React.FC<AISettingsProps> = ({ onClose }) => {
                   <input
                     type="password"
                     className="form-input"
-                    placeholder="Enter your Gemini API key..."
+                    placeholder="AIzaSyC... (Google Gemini API Key)"
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
+                    style={{ fontFamily: 'monospace' }}
                   />
                   <button 
                     className="btn btn-secondary"

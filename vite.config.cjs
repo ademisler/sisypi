@@ -7,7 +7,7 @@ module.exports = defineConfig({
     outDir: 'dist',
     emptyOutDir: false,
     sourcemap: true,
-    minify: 'esbuild',
+    minify: false, // Disable minification to see what's happening
     rollupOptions: {
       input: {
         popup: 'popup.html',
@@ -17,6 +17,7 @@ module.exports = defineConfig({
         chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
       },
+      treeshake: false, // Disable tree-shaking
     },
   },
   define: {
