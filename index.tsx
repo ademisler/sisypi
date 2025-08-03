@@ -1,313 +1,733 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { createRoot, createPortal } from 'react-dom/client';
+import React from 'react';
+import { createRoot } from 'react-dom/client';
 import './popup/popup.css';
 
-// --- TYPE DEFINITIONS ---
-interface Step {
-  tip: string;
-  deger?: string;
-  metin?: string;
-  degisken?: string;
-  ms?: number | string;
-  sayi?: number | string;
-  elementData?: any;
-}
-interface Scenario { id: string; baslik: string; urlKisitlamasi: string; adimlar: Step[]; }
-interface Scenarios { [key:string]: Scenario; }
+// Import our new architecture components
+import { AppProvider, useApp } from './src/context/AppContext';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
+import type { AutomationStep, StepType } from './src/types';
+import { UI_TEXT, APP_CONFIG, STEP_CONFIGS } from './src/constants';
+import { getStepDisplayInfo } from './src/utils';
+import { validateScenario } from './src/validation/validators';
 
-// --- HELPERS (Omitted for brevity) ---
-const getStepDetails = (step: Step) => { /* ... */
-    const v = step.deger ? <span className="value">{step.deger}</span> : '';
-    const t = step.metin ? <span className="value">{step.metin}</span> : '';
-    const variable = step.degisken ? <><i className="fa-solid fa-arrow-right-long" style={{ margin: '0 6px' }}></i><span className="variable">{step.degisken}</span></> : '';
-    switch (step.tip) {
-        case 'tıkla': return { icon: 'fa-solid fa-hand-pointer', content: <><b>Click:</b> {v}</>, color: 'var(--primary-color)' };
-        case 'yaz': return { icon: 'fa-solid fa-keyboard', content: <><b>Type</b> {t} into {v}</>, color: 'var(--primary-color)' };
-        case 'kopyala': return { icon: 'fa-solid fa-copy', content: <><b>Copy from:</b> {v} {variable}</>, color: 'var(--primary-color)' };
-        case 'wait': return { icon: 'fa-solid fa-clock', content: <><b>Wait:</b> {step.ms || 1000}ms</>, color: '#faad14' };
-        case 'comment': return { icon: 'fa-solid fa-comment-dots', content: <i className="step-comment">{step.metin || '...'}</i>, color: 'var(--comment-color)' };
-        case 'screenshot': return { icon: 'fa-solid fa-camera', content: <b>Screenshot</b>, color: '#722ed1' };
-        case 'scroll': return { icon: 'fa-solid fa-arrows-down-to-line', content: <b>Scroll Page</b>, color: '#722ed1' };
-        case 'if_start': return { icon: 'fa-solid fa-question', content: <><b>IF</b> {v} exists</>, color: 'var(--block-color)' };
-        case 'else_block': return { icon: 'fa-solid fa-arrows-split-up-and-left', content: <b>ELSE</b>, color: 'var(--block-color)' };
-        case 'if_end': return { icon: 'fa-solid fa-check-double', content: <b>END IF</b>, color: 'var(--block-color)' };
-        case 'loop_start': return { icon: 'fa-solid fa-repeat', content: <><b>LOOP</b> {step.sayi || 'N'} times</>, color: 'var(--block-color)' };
-        case 'loop_end': return { icon: 'fa-solid fa-circle-stop', content: <b>END LOOP</b>, color: 'var(--block-color)' };
-        default: return { icon: 'fa-solid fa-question-circle', content: 'Unknown Step', color: 'var(--danger-color)' };
-    }
-};
-
-// --- MAIN APP ---
+// === MAIN APP COMPONENT ===
 const App: React.FC = () => {
-    // State and effects... (Omitted for brevity)
-    const [scenarios, setScenarios] = useState<Scenarios>({});
-    const [view, setView] = useState<'main' | 'editor'>('main');
-    const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
-    const [status, setStatus] = useState({ message: '', type: '' });
+  const { state, actions } = useApp();
 
-    useEffect(() => {
-        chrome.runtime.sendMessage({ action: 'getInitialData' }, (response) => {
-            if (response) setScenarios(response.scenarios || {});
-        });
-        const listener = (req: any) => {
-            if (req.action === 'updateRunStatus') setStatus({ message: req.status.messageKey, type: req.status.type });
+  const handleLoadBackup = async () => {
+    try {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const data = JSON.parse(event.target?.result as string);
+            actions.restoreScenarios(data);
+          } catch (error) {
+            actions.setError('Invalid backup file format');
+          }
         };
-        chrome.runtime.onMessage.addListener(listener);
-        return () => chrome.runtime.onMessage.removeListener(listener);
-    }, []);
+        reader.readAsText(file);
+      };
+      input.click();
+    } catch (error) {
+      actions.setError('Failed to load backup file');
+    }
+  };
 
-    const saveScenariosToStorage = useCallback((newScenarios: Scenarios) => {
-        setScenarios(newScenarios);
-        chrome.runtime.sendMessage({ action: 'saveScenarios', data: newScenarios });
-    }, []);
-
-    const handleCreateScenario = () => {
-        const newId = `scenario_${Date.now()}`;
-        const newScenarios = { ...scenarios, [newId]: { id: newId, baslik: 'Untitled', urlKisitlamasi: '', adimlar: [] } };
-        saveScenariosToStorage(newScenarios);
-        setActiveScenarioId(newId);
-        setView('editor');
-    };
-
-    const handleDeleteScenario = (id: string) => {
-        if (window.confirm(`Delete "${scenarios[id].baslik}"?`)) {
-            const newScenarios = { ...scenarios };
-            delete newScenarios[id];
-            saveScenariosToStorage(newScenarios);
-        }
-    };
-
-    const handleUpdateScenario = (updatedScenario: Scenario) => {
-        const newScenarios = { ...scenarios, [updatedScenario.id]: updatedScenario };
-        saveScenariosToStorage(newScenarios);
-    };
-
-    const activeScenario = activeScenarioId ? scenarios[activeScenarioId] : null;
-
-    return (
-        <div className="app-container">
-            {view === 'main' ? (
-                <MainView scenarios={scenarios} onCreate={handleCreateScenario} onSelect={(id) => { setActiveScenarioId(id); setView('editor'); }} onDelete={handleDeleteScenario} />
-            ) : (
-                activeScenario && <EditorView scenario={activeScenario} onBack={() => { setView('main'); setActiveScenarioId(null); }} onUpdate={handleUpdateScenario} />
-            )}
-            {status.message && <div className={`app-footer ${status.type}`}>{status.message}</div>}
-        </div>
-    );
+  return (
+    <div className="app-container">
+      <Header
+        view={state.currentView}
+        onBack={() => actions.setView('main')}
+        onBackupAll={actions.backupScenarios}
+        onLoadBackup={handleLoadBackup}
+      />
+      
+      <div className="app-content">
+        {state.error && (
+          <ErrorMessage message={state.error} onDismiss={() => actions.setError(null)} />
+        )}
+        
+        {state.status.message && (
+          <StatusBar message={state.status.message} type={state.status.type} />
+        )}
+        
+        {state.currentView === 'main' ? (
+          <MainView />
+        ) : (
+          <EditorView />
+        )}
+      </div>
+    </div>
+  );
 };
 
+// === ERROR MESSAGE COMPONENT ===
+interface ErrorMessageProps {
+  message: string;
+  onDismiss: () => void;
+}
 
-// --- VIEWS AND MAIN COMPONENTS ---
-
-const MainView: React.FC<{ scenarios: Scenarios; onCreate: () => void; onSelect: (id: string) => void; onDelete: (id: string) => void; }> = ({ scenarios, onCreate, onSelect, onDelete }) => (
-    <>
-        <header className="app-header"><h1>My Scenarios</h1><button className="btn btn-primary" onClick={onCreate}><i className="fa-solid fa-plus"></i> New</button></header>
-        <div className="view-container">
-            <div className="scenario-list">
-                {Object.values(scenarios).map((s) => (
-                    <div key={s.id} className="scenario-card" onClick={() => onSelect(s.id)}>
-                        <h3>{s.baslik}</h3>
-                        <button className="btn-icon btn-danger" onClick={(e) => { e.stopPropagation(); onDelete(s.id); }}><i className="fa-solid fa-trash"></i></button>
-                    </div>
-                ))}
-            </div>
-        </div>
-    </>
+const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, onDismiss }) => (
+  <div className="status-message status-error">
+    <i className="fa-solid fa-exclamation-circle"></i>
+    <span>{message}</span>
+    <button className="btn btn-sm btn-ghost" onClick={onDismiss} style={{ marginLeft: 'auto' }}>
+      <i className="fa-solid fa-times"></i>
+    </button>
+  </div>
 );
 
-const EditorView: React.FC<{ scenario: Scenario; onBack: () => void; onUpdate: (s: Scenario) => void; }> = ({ scenario, onBack, onUpdate }) => {
-    const [localScenario, setLocalScenario] = useState(scenario);
-    const [editingStepInfo, setEditingStepInfo] = useState<{ step: Step; index: number } | null>(null);
-    const [isSelecting, setIsSelecting] = useState(false);
-    const [selectionNumber, setSelectionNumber] = useState("");
-    const [selectionError, setSelectionError] = useState("");
+// === HEADER COMPONENT ===
+interface HeaderProps {
+  view: string;
+  onBack: () => void;
+  onBackupAll: () => void;
+  onLoadBackup: () => void;
+}
 
-    const handleSave = () => onUpdate(localScenario);
-    const handleRun = () => { handleSave(); chrome.runtime.sendMessage({ action: 'runScenario', scenarioId: localScenario.id, allScenarios: { [localScenario.id]: localScenario } }); };
-
-    const updateSteps = (newSteps: Step[]) => setLocalScenario(p => ({ ...p, adimlar: newSteps }));
-
-    const handleSaveStep = (step: Step, index: number) => {
-        const newSteps = [...localScenario.adimlar];
-        if (index === -1) newSteps.push(step);
-        else newSteps[index] = step;
-        updateSteps(newSteps);
-        setEditingStepInfo(null);
-    };
-
-    const handleStartSelection = () => {
-        setIsSelecting(true);
-        setSelectionError("");
-        chrome.runtime.sendMessage({ action: 'startSelection' });
-    };
-
-    const handleConfirmSelection = () => {
-        const num = parseInt(selectionNumber, 10);
-        if (isNaN(num) || num <= 0) {
-            setSelectionError("Please enter a valid number.");
-            return;
-        }
-        chrome.runtime.sendMessage({ action: 'selectElementByNumber', elementNumber: num }, (res) => {
-            if (res && res.success) {
-                setEditingStepInfo({ step: { tip: 'tıkla', deger: res.elementData.selector, elementData: res.elementData }, index: -1 });
-                setIsSelecting(false);
-                setSelectionNumber("");
-            } else {
-                setSelectionError(res.error || "Element selection failed.");
-            }
-        });
-    };
-
-    const handleCancelSelection = () => {
-        setIsSelecting(false);
-        chrome.runtime.sendMessage({ action: 'stopSelection' });
-    };
-
-    useEffect(() => { return () => { onUpdate(localScenario); } }, [localScenario, onUpdate]);
-
-    return (
+const Header: React.FC<HeaderProps> = ({ view, onBack, onBackupAll, onLoadBackup }) => (
+  <header className="app-header">
+    <h1>
+      {view === 'main' ? UI_TEXT.MAIN_TITLE : UI_TEXT.EDITOR_TITLE}
+    </h1>
+    <div className="header-actions">
+      {view === 'main' ? (
         <>
-            <header className="app-header">
-                <button className="btn" onClick={onBack}><i className="fa-solid fa-arrow-left"></i> Back</button>
-                <div className="header-actions">
-                    <button className="btn" onClick={handleRun}><i className="fa-solid fa-play"></i> Run</button>
-                    <button className="btn btn-primary" onClick={handleSave}><i className="fa-solid fa-save"></i> Save</button>
-                </div>
-            </header>
-            <div className="view-container">
-                <div className="editor-header">
-                    <input type="text" value={localScenario.baslik} onChange={e => setLocalScenario(p => ({ ...p, baslik: e.target.value }))} />
-                    <input type="text" placeholder="URL constraint..." value={localScenario.urlKisitlamasi} onChange={e => setLocalScenario(p => ({ ...p, urlKisitlamasi: e.target.value }))} />
-                </div>
-
-                {!isSelecting ? (
-                    <button className="btn" style={{ width: '100%', marginBottom: '16px' }} onClick={handleStartSelection}><i className="fa-solid fa-hand-pointer"></i> Add Step by Selection</button>
-                ) : (
-                    <div className="selection-ui">
-                        <p>Go to the page and enter the number of the element you want to select.</p>
-                        <input type="number" value={selectionNumber} onChange={e => setSelectionNumber(e.target.value)} placeholder="Enter number..." autoFocus />
-                        <div className="selection-actions">
-                            <button className="btn" onClick={handleCancelSelection}>Cancel</button>
-                            <button className="btn btn-primary" onClick={handleConfirmSelection}>Select</button>
-                        </div>
-                        {selectionError && <p className="error-text">{selectionError}</p>}
-                    </div>
-                )}
-
-                <div className="steps-container">
-                    {localScenario.adimlar.map((step, index) => (
-                        <StepCard key={index} step={step} onEdit={() => setEditingStepInfo({ step: localScenario.adimlar[index], index })} onDelete={() => updateSteps(localScenario.adimlar.filter((_, i) => i !== index))} />
-                    ))}
-                </div>
-                <Toolbox onAddStep={(type) => setEditingStepInfo({ step: { tip: type }, index: -1 })} />
-            </div>
-            {editingStepInfo && (
-                <EditStepModal stepInfo={editingStepInfo} onSave={handleSaveStep} onClose={() => setEditingStepInfo(null)} />
-            )}
+          <button className="btn btn-ghost" onClick={onLoadBackup} title={UI_TEXT.TOOLTIP_RESTORE}>
+            <i className="fa-solid fa-upload"></i>
+          </button>
+          <button className="btn btn-ghost" onClick={onBackupAll} title={UI_TEXT.TOOLTIP_BACKUP}>
+            <i className="fa-solid fa-download"></i>
+          </button>
         </>
-    );
+      ) : (
+        <button className="btn btn-ghost" onClick={onBack}>
+          <i className="fa-solid fa-arrow-left"></i>
+          {UI_TEXT.BACK}
+        </button>
+      )}
+    </div>
+  </header>
+);
+
+// === STATUS BAR COMPONENT ===
+interface StatusBarProps {
+  message: string;
+  type: string;
+}
+
+const StatusBar: React.FC<StatusBarProps> = ({ message, type }) => {
+  const getStatusClass = () => {
+    switch (type) {
+      case 'success':
+      case 'basari':
+        return 'status-success';
+      case 'error':
+      case 'hata':
+        return 'status-error';
+      case 'warning':
+        return 'status-warning';
+      case 'running':
+      case 'calisiyor':
+        return 'status-info';
+      default:
+        return 'status-info';
+    }
+  };
+
+  const getStatusIcon = () => {
+    switch (type) {
+      case 'success':
+      case 'basari':
+        return 'fa-solid fa-check-circle';
+      case 'error':
+      case 'hata':
+        return 'fa-solid fa-exclamation-circle';
+      case 'warning':
+        return 'fa-solid fa-exclamation-triangle';
+      case 'running':
+      case 'calisiyor':
+        return 'fa-solid fa-spinner spinning';
+      default:
+        return 'fa-solid fa-info-circle';
+    }
+  };
+
+  return (
+    <div className={`status-message ${getStatusClass()}`}>
+      <i className={getStatusIcon()}></i>
+      {message}
+    </div>
+  );
 };
 
-// --- ATOMIC & REUSABLE COMPONENTS (Omitted for brevity) ---
-const StepCard: React.FC<{ step: Step; onEdit: () => void; onDelete: () => void; }> = ({ step, onEdit, onDelete }) => { /* ... */
-    const { icon, content, color } = getStepDetails(step);
-    return (
-        <div className="step-card">
-            <span className="icon" style={{ color }}><i className={icon}></i></span>
-            <div className="details">{content}</div>
-            <div className="actions">
-                <button className="btn-icon" onClick={onEdit}><i className="fa-solid fa-pencil"></i></button>
-                <button className="btn-icon btn-danger" onClick={onDelete}><i className="fa-solid fa-trash"></i></button>
-            </div>
-        </div>
-    );
-};
-const Toolbox: React.FC<{ onAddStep: (type: string) => void }> = ({ onAddStep }) => { /* ... */
-    return (
-        <div className="toolbox">
-            <h3>Toolbox</h3>
-            <div className="toolbox-buttons">
-                {['wait', 'comment', 'screenshot', 'scroll', 'if_start', 'else_block', 'if_end', 'loop_start', 'loop_end'].map(type => (
-                    <button key={type} className="btn" onClick={() => onAddStep(type)}>{type.replace('_', ' ').toUpperCase()}</button>
-                ))}
-            </div>
-        </div>
-    );
-};
-const Modal: React.FC<{ title: string; children: React.ReactNode; onClose: () => void; footer: React.ReactNode; }> = ({ title, children, onClose, footer }) => { /* ... */
-    const modalRoot = document.getElementById('modal-root');
-    if (!modalRoot) return null;
-    return createPortal(
-        <div className="modal-backdrop" onClick={onClose}>
-            <div className="modal-content" onClick={e => e.stopPropagation()}>
-                <div className="modal-header"><h2>{title}</h2><button onClick={onClose} className="btn-icon">&times;</button></div>
-                <div className="modal-body">{children}</div>
-                <div className="modal-footer">{footer}</div>
-            </div>
-        </div>,
-        modalRoot
-    );
-};
-const EditStepModal: React.FC<{ stepInfo: { step: Step; index: number }; onClose: () => void; onSave: (step: Step, index: number) => void; }> = ({ stepInfo, onClose, onSave }) => {
-    const [step, setStep] = useState(stepInfo.step);
-    const handleSave = () => onSave(step, stepInfo.index);
+// === MAIN VIEW COMPONENT ===
+const MainView: React.FC = () => {
+  const { state, actions } = useApp();
+  const scenarioList = Object.values(state.scenarios);
 
-    const renderField = () => {
-        if (step.elementData) { // Action for a selected element
-            return (
-                <>
-                    <div className="element-preview">Selector: <code>{step.deger}</code></div>
-                    <label>Action</label>
-                    <select value={step.tip} onChange={e => setStep(p => ({...p, tip: e.target.value}))}>
-                        <option value="tıkla">Click</option>
-                        <option value="yaz">Type</option>
-                        <option value="kopyala">Copy</option>
-                    </select>
-                    {step.tip === 'yaz' && <><label>Text to Type</label><input type="text" value={step.metin || ''} onChange={e => setStep(p => ({...p, metin: e.target.value}))} /></>}
-                    {step.tip === 'kopyala' && <><label>Variable Name</label><input type="text" value={step.degisken || ''} onChange={e => setStep(p => ({...p, degisken: e.target.value}))} /></>}
-                </>
-            );
-        }
-        // Toolbox actions
-        switch (step.tip) {
-            case 'wait': return <><label>Duration (ms)</label><input type="number" value={step.ms || ''} onChange={e => setStep({ ...step, ms: e.target.value })} /></>;
-            case 'comment': return <><label>Comment</label><textarea value={step.metin || ''} onChange={e => setStep({ ...step, metin: e.target.value })} /></>;
-            case 'loop_start': return <><label>Repetitions</label><input type="number" value={step.sayi || ''} onChange={e => setStep({ ...step, sayi: e.target.value })} /></>;
-            case 'if_start': return <><label>Selector</label><input type="text" placeholder="e.g., #my-button" value={step.deger || ''} onChange={e => setStep({ ...step, deger: e.target.value })} /></>;
-            default: return <p>This step type has no editable parameters.</p>;
-        }
+  return (
+    <div className="view-container">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <h2 style={{ margin: 0, fontSize: 'var(--font-size-xl)', fontWeight: 'var(--font-weight-semibold)' }}>
+          {UI_TEXT.MAIN_TITLE}
+        </h2>
+        <button className="btn btn-primary" onClick={actions.createScenario}>
+          <i className="fa-solid fa-plus"></i>
+          {UI_TEXT.CREATE_NEW_SCENARIO}
+        </button>
+      </div>
+
+      {scenarioList.length === 0 ? (
+        <EmptyState
+          icon="fa-solid fa-robot"
+          title={UI_TEXT.NO_SCENARIOS}
+          description={UI_TEXT.NO_SCENARIOS_DESCRIPTION}
+          action={
+            <button className="btn btn-primary btn-lg" onClick={actions.createScenario}>
+              <i className="fa-solid fa-plus"></i>
+              {UI_TEXT.CREATE_NEW_SCENARIO}
+            </button>
+          }
+        />
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          {scenarioList.map((scenario) => (
+            <ScenarioCard
+              key={scenario.id}
+              scenario={scenario}
+              onEdit={() => {
+                actions.setActiveScenario(scenario.id);
+                actions.setView('editor');
+              }}
+              onDelete={() => actions.deleteScenario(scenario.id)}
+              onRun={() => actions.runScenario(scenario.id)}
+              isLoading={state.isLoading}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// === SCENARIO CARD COMPONENT ===
+interface ScenarioCardProps {
+  scenario: Scenario;
+  onEdit: () => void;
+  onDelete: () => void;
+  onRun: () => void;
+  isLoading: boolean;
+}
+
+const ScenarioCard: React.FC<ScenarioCardProps> = ({
+  scenario,
+  onEdit,
+  onDelete,
+  onRun,
+  isLoading,
+}) => (
+  <div className="scenario-card">
+    <div className="scenario-header">
+      <h3 className="scenario-title">{scenario.title}</h3>
+      <div className="scenario-actions">
+        <button
+          className="btn btn-sm btn-primary"
+          onClick={onRun}
+          disabled={isLoading}
+          title={UI_TEXT.TOOLTIP_RUN_SCENARIO}
+        >
+          <i className={`fa-solid ${isLoading ? 'fa-spinner spinning' : 'fa-play'}`}></i>
+          {UI_TEXT.RUN}
+        </button>
+        <button className="btn btn-sm btn-ghost" onClick={onEdit} title={UI_TEXT.TOOLTIP_EDIT_STEP}>
+          <i className="fa-solid fa-edit"></i>
+        </button>
+        <button className="btn btn-sm btn-danger" onClick={onDelete} title={UI_TEXT.TOOLTIP_DELETE_STEP}>
+          <i className="fa-solid fa-trash"></i>
+        </button>
+      </div>
+    </div>
+    
+    <div className="scenario-meta">
+      {scenario.urlRestriction && (
+        <div className="scenario-url">
+          <i className="fa-solid fa-link"></i>
+          <span>{scenario.urlRestriction}</span>
+        </div>
+      )}
+      <div className="scenario-steps-count">
+        <i className="fa-solid fa-list-ol"></i>
+        <span>{scenario.steps.length} steps</span>
+      </div>
+    </div>
+  </div>
+);
+
+// === EMPTY STATE COMPONENT ===
+interface EmptyStateProps {
+  icon: string;
+  title: string;
+  description: string;
+  action?: React.ReactNode;
+}
+
+const EmptyState: React.FC<EmptyStateProps> = ({ icon, title, description, action }) => (
+  <div className="empty-state">
+    <div className="empty-state-icon">
+      <i className={icon}></i>
+    </div>
+    <h3 className="empty-state-title">{title}</h3>
+    <p className="empty-state-description">{description}</p>
+    {action && action}
+  </div>
+);
+
+// === EDITOR VIEW COMPONENT ===
+const EditorView: React.FC = () => {
+  const { state, actions } = useApp();
+  const scenario = state.activeScenarioId ? state.scenarios[state.activeScenarioId] : null;
+  
+  const [title, setTitle] = React.useState(scenario?.title || '');
+  const [urlRestriction, setUrlRestriction] = React.useState(scenario?.urlRestriction || '');
+  const [steps, setSteps] = React.useState<AutomationStep[]>(scenario?.steps || []);
+  const [isSelecting, setIsSelecting] = React.useState(false);
+  const [selectedElementNumber, setSelectedElementNumber] = React.useState('');
+  const [validationResult, setValidationResult] = React.useState<any>(null);
+
+  // Validate on changes
+  React.useEffect(() => {
+    if (scenario) {
+      const testScenario = {
+        ...scenario,
+        title: title.trim() || 'Untitled',
+        urlRestriction: urlRestriction.trim(),
+        steps,
+      };
+      const validation = validateScenario(testScenario);
+      setValidationResult(validation);
+    }
+  }, [title, urlRestriction, steps, scenario]);
+
+  const handleSave = () => {
+    if (!scenario) return;
+
+    const updatedScenario = {
+      ...scenario,
+      title: title.trim() || 'Untitled',
+      urlRestriction: urlRestriction.trim(),
+      steps,
+      updatedAt: Date.now(),
     };
 
-    const modalTitle = step.elementData ? 'Configure Action' : `Edit Step: ${step.tip.toUpperCase()}`;
+    const validation = validateScenario(updatedScenario);
+    if (!validation.isValid) {
+      actions.setError(`Cannot save scenario: ${validation.errors[0]?.message}`);
+      return;
+    }
 
-    return (
-        <Modal title={modalTitle} onClose={onClose} footer={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={handleSave}>Save</button></>}>
-            <div className="form-group">{renderField()}</div>
-        </Modal>
+    actions.updateScenario(updatedScenario);
+    actions.setView('main');
+  };
+
+  const handleAddToolboxStep = (stepType: StepType) => {
+    const newStep: AutomationStep = {
+      type: stepType,
+      ...(STEP_CONFIGS[stepType].hasDuration && { duration: 1000 }),
+      ...(STEP_CONFIGS[stepType].hasRepetitions && { repetitions: 1 }),
+    };
+
+    setSteps([...steps, newStep]);
+  };
+
+  const handleStartElementSelection = () => {
+    setIsSelecting(true);
+    chrome.runtime.sendMessage({ action: 'startSelection' });
+  };
+
+  const handleSelectElement = () => {
+    const elementNumber = parseInt(selectedElementNumber);
+    if (isNaN(elementNumber)) return;
+
+    chrome.runtime.sendMessage(
+      { action: 'selectElementByNumber', elementNumber },
+      (response) => {
+        if (response?.success) {
+          const newStep: AutomationStep = {
+            type: 'click',
+            selector: response.elementData.selector,
+            elementData: response.elementData,
+          };
+          setSteps([...steps, newStep]);
+          setIsSelecting(false);
+          setSelectedElementNumber('');
+          chrome.runtime.sendMessage({ action: 'stopSelection' });
+        }
+      }
     );
+  };
+
+  const handleStepEdit = (index: number, updatedStep: AutomationStep) => {
+    const newSteps = [...steps];
+    newSteps[index] = updatedStep;
+    setSteps(newSteps);
+  };
+
+  const handleStepDelete = (index: number) => {
+    setSteps(steps.filter((_, i) => i !== index));
+  };
+
+  const handleStepMove = (index: number, direction: 'up' | 'down') => {
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= steps.length) return;
+
+    const newSteps = [...steps];
+    [newSteps[index], newSteps[newIndex]] = [newSteps[newIndex], newSteps[index]];
+    setSteps(newSteps);
+  };
+
+  return (
+    <div className="view-container">
+      <div className="form-group">
+        <label className="form-label">{UI_TEXT.SCENARIO_NAME}</label>
+        <input
+          type="text"
+          className="form-input"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder={UI_TEXT.SCENARIO_NAME_PLACEHOLDER}
+          maxLength={APP_CONFIG.MAX_SCENARIO_NAME_LENGTH}
+        />
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">{UI_TEXT.URL_RESTRICTION}</label>
+        <input
+          type="text"
+          className="form-input"
+          value={urlRestriction}
+          onChange={(e) => setUrlRestriction(e.target.value)}
+          placeholder={UI_TEXT.URL_RESTRICTION_PLACEHOLDER}
+        />
+        <div className="form-help">{UI_TEXT.URL_RESTRICTION_HELP}</div>
+      </div>
+
+      <div className="steps-container">
+        <div className="steps-header">
+          <h3 className="steps-title">{UI_TEXT.STEPS_TITLE}</h3>
+          <button className="btn btn-primary" onClick={handleStartElementSelection}>
+            <i className="fa-solid fa-crosshairs"></i>
+            {UI_TEXT.ADD_STEP_BY_ELEMENT}
+          </button>
+        </div>
+
+        {isSelecting && (
+          <SelectionUI
+            selectedElementNumber={selectedElementNumber}
+            onElementNumberChange={setSelectedElementNumber}
+            onSelect={handleSelectElement}
+            onCancel={() => {
+              setIsSelecting(false);
+              setSelectedElementNumber('');
+              chrome.runtime.sendMessage({ action: 'stopSelection' });
+            }}
+          />
+        )}
+
+        {steps.length === 0 ? (
+          <EmptyState
+            icon="fa-solid fa-list-check"
+            title={UI_TEXT.NO_STEPS}
+            description="Add your first automation step to get started"
+            action={
+              <button className="btn btn-primary" onClick={handleStartElementSelection}>
+                <i className="fa-solid fa-crosshairs"></i>
+                {UI_TEXT.ADD_STEP_BY_ELEMENT}
+              </button>
+            }
+          />
+        ) : (
+          <div className="steps-list">
+            {steps.map((step, index) => (
+              <StepItem
+                key={index}
+                step={step}
+                index={index}
+                onEdit={(updatedStep) => handleStepEdit(index, updatedStep)}
+                onDelete={() => handleStepDelete(index)}
+                onMoveUp={() => handleStepMove(index, 'up')}
+                onMoveDown={() => handleStepMove(index, 'down')}
+                canMoveUp={index > 0}
+                canMoveDown={index < steps.length - 1}
+              />
+            ))}
+          </div>
+        )}
+
+        <Toolbox onAddStep={handleAddToolboxStep} />
+      </div>
+
+      {validationResult && !validationResult.isValid && (
+        <div className="validation-errors">
+          <div className="validation-title">
+            <i className="fa-solid fa-exclamation-triangle"></i>
+            Validation Errors
+          </div>
+          <ul className="validation-list">
+            {validationResult.errors.map((error: any, index: number) => (
+              <li key={index}>{error.message}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {validationResult && validationResult.warnings.length > 0 && (
+        <div className="validation-warnings">
+          <div className="validation-title">
+            <i className="fa-solid fa-exclamation-triangle"></i>
+            Warnings
+          </div>
+          <ul className="validation-list">
+            {validationResult.warnings.map((warning: any, index: number) => (
+              <li key={index}>{warning.message}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="card-footer">
+        <button className="btn" onClick={() => actions.setView('main')}>
+          {UI_TEXT.CANCEL}
+        </button>
+        <button 
+          className="btn btn-primary" 
+          onClick={handleSave}
+          disabled={validationResult && !validationResult.isValid}
+        >
+          {UI_TEXT.SAVE}
+        </button>
+      </div>
+    </div>
+  );
 };
 
-// --- STYLES & RENDER ---
-const dynamicStyles = `
-.selection-ui { border: 1px solid #91d5ff; background: #e6f7ff; padding: 15px; border-radius: 4px; margin-bottom: 16px; }
-.selection-ui p { margin: 0 0 10px; }
-.selection-ui input { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid #91d5ff; border-radius: 4px; margin-bottom: 10px; }
-.selection-actions { display: flex; justify-content: flex-end; gap: 10px; }
-.error-text { color: var(--danger-color); font-size: 12px; margin-top: 5px; }
-.element-preview { background: #f0f0f0; padding: 8px; border-radius: 4px; margin-bottom: 10px; font-family: monospace; font-size: 12px; }
-.modal-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-.modal-content { background: white; padding: 20px; border-radius: 8px; min-width: 350px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-.modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
-.modal-header h2 { margin: 0; font-size: 18px; }
-.modal-footer { border-top: 1px solid #eee; padding-top: 10px; margin-top: 15px; text-align: right; }
-.modal-footer .btn { margin-left: 10px; }
-.form-group { display: flex; flex-direction: column; gap: 8px; }
-.form-group label { font-weight: bold; }
-.form-group input, .form-group textarea, .form-group select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-`;
-const styleSheet = document.createElement("style");
-styleSheet.innerText = dynamicStyles;
-document.head.appendChild(styleSheet);
+// === SELECTION UI COMPONENT ===
+interface SelectionUIProps {
+  selectedElementNumber: string;
+  onElementNumberChange: (value: string) => void;
+  onSelect: () => void;
+  onCancel: () => void;
+}
 
+const SelectionUI: React.FC<SelectionUIProps> = ({
+  selectedElementNumber,
+  onElementNumberChange,
+  onSelect,
+  onCancel,
+}) => (
+  <div className="selection-ui">
+    <h4 className="selection-title">{UI_TEXT.SELECTION_TITLE}</h4>
+    <p className="selection-instruction">{UI_TEXT.SELECTION_INSTRUCTION}</p>
+    <div className="selection-actions">
+      <input
+        type="number"
+        className="form-input selection-input"
+        value={selectedElementNumber}
+        onChange={(e) => onElementNumberChange(e.target.value)}
+        placeholder={UI_TEXT.SELECTION_NUMBER_PLACEHOLDER}
+        min="1"
+      />
+      <button className="btn btn-primary" onClick={onSelect} disabled={!selectedElementNumber}>
+        {UI_TEXT.SELECT}
+      </button>
+      <button className="btn" onClick={onCancel}>
+        {UI_TEXT.CANCEL}
+      </button>
+    </div>
+  </div>
+);
+
+// === STEP ITEM COMPONENT ===
+interface StepItemProps {
+  step: AutomationStep;
+  index: number;
+  onEdit: (step: AutomationStep) => void;
+  onDelete: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+}
+
+const StepItem: React.FC<StepItemProps> = ({
+  step,
+  index,
+  onEdit,
+  onDelete,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp,
+  canMoveDown,
+}) => {
+  const displayInfo = getStepDisplayInfo(step);
+
+  return (
+    <div className="step-item">
+      <div className="step-icon" style={{ color: displayInfo.color }}>
+        <i className={displayInfo.icon}></i>
+      </div>
+      <div className="step-content">
+        <span className={step.type === 'comment' ? 'step-comment' : ''}>
+          {displayInfo.text}
+        </span>
+        {displayInfo.hasSelector && (
+          <span className="value">{displayInfo.selector}</span>
+        )}
+        {displayInfo.hasVariable && (
+          <>
+            <i className="fa-solid fa-arrow-right-long" style={{ margin: '0 6px' }}></i>
+            <span className="variable">{displayInfo.variable}</span>
+          </>
+        )}
+      </div>
+      <div className="step-actions">
+        {canMoveUp && (
+          <button className="btn btn-sm btn-ghost" onClick={onMoveUp} title={UI_TEXT.TOOLTIP_MOVE_UP}>
+            <i className="fa-solid fa-arrow-up"></i>
+          </button>
+        )}
+        {canMoveDown && (
+          <button className="btn btn-sm btn-ghost" onClick={onMoveDown} title={UI_TEXT.TOOLTIP_MOVE_DOWN}>
+            <i className="fa-solid fa-arrow-down"></i>
+          </button>
+        )}
+        <button className="btn btn-sm btn-ghost" onClick={() => onEdit(step)} title={UI_TEXT.TOOLTIP_EDIT_STEP}>
+          <i className="fa-solid fa-edit"></i>
+        </button>
+        <button className="btn btn-sm btn-danger" onClick={onDelete} title={UI_TEXT.TOOLTIP_DELETE_STEP}>
+          <i className="fa-solid fa-trash"></i>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// === TOOLBOX COMPONENT ===
+interface ToolboxProps {
+  onAddStep: (stepType: StepType) => void;
+}
+
+const Toolbox: React.FC<ToolboxProps> = ({ onAddStep }) => {
+  const [activeCategory, setActiveCategory] = React.useState('basic');
+
+  const toolboxCategories = {
+    basic: {
+      title: 'Basic Actions',
+      steps: [
+        { type: 'wait' as StepType, label: UI_TEXT.WAIT },
+        { type: 'comment' as StepType, label: UI_TEXT.COMMENT },
+        { type: 'screenshot' as StepType, label: UI_TEXT.SCREENSHOT },
+        { type: 'scroll' as StepType, label: UI_TEXT.SCROLL },
+      ]
+    },
+    interactions: {
+      title: 'Interactions',
+      steps: [
+        { type: 'hover' as StepType, label: UI_TEXT.HOVER },
+        { type: 'double_click' as StepType, label: UI_TEXT.DOUBLE_CLICK },
+        { type: 'right_click' as StepType, label: UI_TEXT.RIGHT_CLICK },
+        { type: 'focus' as StepType, label: UI_TEXT.FOCUS },
+        { type: 'blur' as StepType, label: UI_TEXT.BLUR },
+        { type: 'clear_field' as StepType, label: UI_TEXT.CLEAR_FIELD },
+      ]
+    },
+    forms: {
+      title: 'Form Controls',
+      steps: [
+        { type: 'select_option' as StepType, label: UI_TEXT.SELECT_OPTION },
+        { type: 'check_checkbox' as StepType, label: UI_TEXT.CHECK_CHECKBOX },
+        { type: 'uncheck_checkbox' as StepType, label: UI_TEXT.UNCHECK_CHECKBOX },
+        { type: 'press_key' as StepType, label: UI_TEXT.PRESS_KEY },
+      ]
+    },
+    waiting: {
+      title: 'Wait & Assert',
+      steps: [
+        { type: 'wait_for_element' as StepType, label: UI_TEXT.WAIT_FOR_ELEMENT },
+        { type: 'wait_for_text' as StepType, label: UI_TEXT.WAIT_FOR_TEXT },
+        { type: 'assert_text' as StepType, label: UI_TEXT.ASSERT_TEXT },
+        { type: 'assert_element' as StepType, label: UI_TEXT.ASSERT_ELEMENT },
+      ]
+    },
+    advanced: {
+      title: 'Advanced',
+      steps: [
+        { type: 'extract_attribute' as StepType, label: UI_TEXT.EXTRACT_ATTRIBUTE },
+        { type: 'scroll_to_element' as StepType, label: UI_TEXT.SCROLL_TO_ELEMENT },
+      ]
+    },
+    control: {
+      title: 'Control Flow',
+      steps: [
+        { type: 'if_start' as StepType, label: UI_TEXT.IF },
+        { type: 'else_block' as StepType, label: UI_TEXT.ELSE },
+        { type: 'if_end' as StepType, label: UI_TEXT.END_IF },
+        { type: 'loop_start' as StepType, label: UI_TEXT.LOOP },
+        { type: 'loop_end' as StepType, label: UI_TEXT.END_LOOP },
+      ]
+    }
+  };
+
+  return (
+    <div className="toolbox">
+      <h4 className="toolbox-title">{UI_TEXT.TOOLBOX}</h4>
+      
+      {/* Category Tabs */}
+      <div className="toolbox-tabs">
+        {Object.entries(toolboxCategories).map(([key, category]) => (
+          <button
+            key={key}
+            className={`toolbox-tab ${activeCategory === key ? 'active' : ''}`}
+            onClick={() => setActiveCategory(key)}
+          >
+            {category.title}
+          </button>
+        ))}
+      </div>
+
+      {/* Steps Grid */}
+      <div className="toolbox-grid">
+        {toolboxCategories[activeCategory as keyof typeof toolboxCategories].steps.map(({ type, label }) => {
+          const config = STEP_CONFIGS[type];
+          return (
+            <div key={type} className="toolbox-item" onClick={() => onAddStep(type)}>
+              <i className={config.icon} style={{ color: config.color }}></i>
+              <span>{label}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// === RENDER APP ===
 const container = document.getElementById('root');
-if (container) createRoot(container).render(<React.StrictMode><App /></React.StrictMode>);
+if (container) {
+  createRoot(container).render(
+    <React.StrictMode>
+      <ErrorBoundary>
+        <AppProvider>
+          <App />
+        </AppProvider>
+      </ErrorBoundary>
+    </React.StrictMode>
+  );
+}

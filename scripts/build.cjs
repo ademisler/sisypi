@@ -39,6 +39,23 @@ async function build() {
       }
     }
 
+    // 3.5. Copy enhanced scripts
+    console.log('Setting up enhanced scripts...');
+    
+    // Enhanced content script
+    const enhancedContentScript = path.join(rootDir, 'content', 'enhanced_content_script.js');
+    const targetContentScript = path.join(distDir, 'content', 'content_script.js');
+    if (fs.existsSync(enhancedContentScript)) {
+      await fs.copy(enhancedContentScript, targetContentScript);
+    }
+
+    // Enhanced background script
+    const enhancedBackgroundScript = path.join(rootDir, 'scripts', 'enhanced_background.js');
+    const targetBackgroundScript = path.join(distDir, 'scripts', 'background.js');
+    if (fs.existsSync(enhancedBackgroundScript)) {
+      await fs.copy(enhancedBackgroundScript, targetBackgroundScript);
+    }
+
     // 4. Read, modify, and write manifest.json
     console.log('Processing manifest.json...');
     const manifestPath = path.join(rootDir, 'manifest.json');
