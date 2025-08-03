@@ -10,7 +10,7 @@ module.exports = defineConfig({
     minify: 'esbuild',
     rollupOptions: {
       input: {
-        popup: 'popup/popup.html',
+        popup: 'popup.html',
       },
       output: {
         entryFileNames: 'popup.js',
