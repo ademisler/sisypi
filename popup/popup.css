@@ -518,10 +518,70 @@ body, html, #root {
   margin: 0 0 var(--space-3) 0;
 }
 
+.toolbox-tabs {
+  display: flex;
+  gap: var(--space-1);
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.toolbox-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.toolbox-tab {
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+.toolbox-tab:hover {
+  color: var(--text-primary);
+  background: var(--surface-hover);
+}
+
+.toolbox-tab.active {
+  color: var(--primary-600);
+  border-bottom-color: var(--primary-600);
+  background: var(--primary-50);
+}
+
 .toolbox-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   gap: var(--space-2);
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: var(--space-1);
+}
+
+.toolbox-grid::-webkit-scrollbar {
+  width: 4px;
+}
+
+.toolbox-grid::-webkit-scrollbar-track {
+  background: var(--gray-100);
+  border-radius: 2px;
+}
+
+.toolbox-grid::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+  border-radius: 2px;
+}
+
+.toolbox-grid::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-400);
 }
 
 .toolbox-item {
@@ -529,23 +589,25 @@ body, html, #root {
   flex-direction: column;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-3);
+  padding: var(--space-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--background);
   cursor: pointer;
   transition: all var(--transition-fast);
   text-align: center;
+  min-height: 70px;
 }
 
 .toolbox-item:hover {
   border-color: var(--primary-300);
   background: var(--primary-50);
   transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .toolbox-item i {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-base);
   color: var(--primary-600);
 }
 
@@ -553,6 +615,7 @@ body, html, #root {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   color: var(--text-primary);
+  line-height: 1.2;
 }
 
 /* === MODALS === */

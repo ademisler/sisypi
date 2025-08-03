@@ -625,23 +625,86 @@ interface ToolboxProps {
 }
 
 const Toolbox: React.FC<ToolboxProps> = ({ onAddStep }) => {
-  const toolboxSteps: { type: StepType; label: string }[] = [
-    { type: 'wait', label: UI_TEXT.WAIT },
-    { type: 'comment', label: UI_TEXT.COMMENT },
-    { type: 'screenshot', label: UI_TEXT.SCREENSHOT },
-    { type: 'scroll', label: UI_TEXT.SCROLL },
-    { type: 'if_start', label: UI_TEXT.IF },
-    { type: 'else_block', label: UI_TEXT.ELSE },
-    { type: 'if_end', label: UI_TEXT.END_IF },
-    { type: 'loop_start', label: UI_TEXT.LOOP },
-    { type: 'loop_end', label: UI_TEXT.END_LOOP },
-  ];
+  const [activeCategory, setActiveCategory] = React.useState('basic');
+
+  const toolboxCategories = {
+    basic: {
+      title: 'Basic Actions',
+      steps: [
+        { type: 'wait' as StepType, label: UI_TEXT.WAIT },
+        { type: 'comment' as StepType, label: UI_TEXT.COMMENT },
+        { type: 'screenshot' as StepType, label: UI_TEXT.SCREENSHOT },
+        { type: 'scroll' as StepType, label: UI_TEXT.SCROLL },
+      ]
+    },
+    interactions: {
+      title: 'Interactions',
+      steps: [
+        { type: 'hover' as StepType, label: UI_TEXT.HOVER },
+        { type: 'double_click' as StepType, label: UI_TEXT.DOUBLE_CLICK },
+        { type: 'right_click' as StepType, label: UI_TEXT.RIGHT_CLICK },
+        { type: 'focus' as StepType, label: UI_TEXT.FOCUS },
+        { type: 'blur' as StepType, label: UI_TEXT.BLUR },
+        { type: 'clear_field' as StepType, label: UI_TEXT.CLEAR_FIELD },
+      ]
+    },
+    forms: {
+      title: 'Form Controls',
+      steps: [
+        { type: 'select_option' as StepType, label: UI_TEXT.SELECT_OPTION },
+        { type: 'check_checkbox' as StepType, label: UI_TEXT.CHECK_CHECKBOX },
+        { type: 'uncheck_checkbox' as StepType, label: UI_TEXT.UNCHECK_CHECKBOX },
+        { type: 'press_key' as StepType, label: UI_TEXT.PRESS_KEY },
+      ]
+    },
+    waiting: {
+      title: 'Wait & Assert',
+      steps: [
+        { type: 'wait_for_element' as StepType, label: UI_TEXT.WAIT_FOR_ELEMENT },
+        { type: 'wait_for_text' as StepType, label: UI_TEXT.WAIT_FOR_TEXT },
+        { type: 'assert_text' as StepType, label: UI_TEXT.ASSERT_TEXT },
+        { type: 'assert_element' as StepType, label: UI_TEXT.ASSERT_ELEMENT },
+      ]
+    },
+    advanced: {
+      title: 'Advanced',
+      steps: [
+        { type: 'extract_attribute' as StepType, label: UI_TEXT.EXTRACT_ATTRIBUTE },
+        { type: 'scroll_to_element' as StepType, label: UI_TEXT.SCROLL_TO_ELEMENT },
+      ]
+    },
+    control: {
+      title: 'Control Flow',
+      steps: [
+        { type: 'if_start' as StepType, label: UI_TEXT.IF },
+        { type: 'else_block' as StepType, label: UI_TEXT.ELSE },
+        { type: 'if_end' as StepType, label: UI_TEXT.END_IF },
+        { type: 'loop_start' as StepType, label: UI_TEXT.LOOP },
+        { type: 'loop_end' as StepType, label: UI_TEXT.END_LOOP },
+      ]
+    }
+  };
 
   return (
     <div className="toolbox">
       <h4 className="toolbox-title">{UI_TEXT.TOOLBOX}</h4>
+      
+      {/* Category Tabs */}
+      <div className="toolbox-tabs">
+        {Object.entries(toolboxCategories).map(([key, category]) => (
+          <button
+            key={key}
+            className={`toolbox-tab ${activeCategory === key ? 'active' : ''}`}
+            onClick={() => setActiveCategory(key)}
+          >
+            {category.title}
+          </button>
+        ))}
+      </div>
+
+      {/* Steps Grid */}
       <div className="toolbox-grid">
-        {toolboxSteps.map(({ type, label }) => {
+        {toolboxCategories[activeCategory as keyof typeof toolboxCategories].steps.map(({ type, label }) => {
           const config = STEP_CONFIGS[type];
           return (
             <div key={type} className="toolbox-item" onClick={() => onAddStep(type)}>

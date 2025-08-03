@@ -7,6 +7,14 @@ export interface AutomationStep {
   duration?: number | string;
   repetitions?: number | string;
   elementData?: ElementData;
+  // Enhanced properties
+  value?: string;
+  attribute?: string;
+  key?: string;
+  expectedText?: string;
+  timeout?: number;
+  retryCount?: number;
+  description?: string;
 }
 
 export type StepType =
@@ -21,7 +29,23 @@ export type StepType =
   | 'else_block'
   | 'if_end'
   | 'loop_start'
-  | 'loop_end';
+  | 'loop_end'
+  | 'hover'
+  | 'double_click'
+  | 'right_click'
+  | 'select_option'
+  | 'check_checkbox'
+  | 'uncheck_checkbox'
+  | 'focus'
+  | 'blur'
+  | 'clear_field'
+  | 'press_key'
+  | 'wait_for_element'
+  | 'wait_for_text'
+  | 'assert_text'
+  | 'assert_element'
+  | 'extract_attribute'
+  | 'scroll_to_element';
 
 export interface ElementData {
   selector: string;
