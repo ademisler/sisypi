@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Sisypi - Otomasyon Asistanı",
-  "description": "Web sayfalarındaki görevleri otomatikleştirmek için senaryolar oluşturun ve çalıştırın.",
-  "version": "1.0",
+  "name": "Sisypi - Automation Assistant",
+  "description": "Create and run automation scenarios for web tasks without coding knowledge.",
+  "version": "2.0.0",
   "permissions": [
     "storage",
     "activeTab",
@@ -31,5 +31,8 @@
       "resources": [ "content/selection.css" ],
       "matches": [ "<all_urls>" ]
     }
-  ]
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
 }

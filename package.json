@@ -1,24 +1,56 @@
 {
-  "name": "app",
+  "name": "sisypi-automation-assistant",
+  "version": "2.0.0",
+  "description": "A powerful Chrome extension for web automation without coding",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
+  "author": "Adem İşler <contact@ademisler.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ademisler/sisypi.git"
+  },
+  "keywords": [
+    "chrome-extension",
+    "automation",
+    "web-scraping",
+    "no-code",
+    "productivity"
+  ],
   "scripts": {
-    "dev": "npx vite",
+    "dev": "vite",
     "build": "node scripts/build.cjs",
-    "preview": "npx vite preview",
-    "zip": "npm run build && (cd dist && zip -r ../sisypi-extension.zip .)"
+    "preview": "vite preview",
+    "zip": "npm run build && (cd dist && zip -r ../sisypi-extension.zip .)",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist node_modules/.cache"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@types/chrome": "^0.1.1",
+    "@types/chrome": "^0.0.258",
     "@types/node": "^22.14.0",
-    "@types/react": "^19.1.9",
-    "@types/react-dom": "^19.1.7",
-    "@vitejs/plugin-react": "^4.7.0",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
     "fs-extra": "^11.3.0",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "typescript": "~5.7.2",
-    "vite": "^6.2.0"
+    "prettier": "^3.1.1",
+    "terser": "^5.43.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   }
 }
