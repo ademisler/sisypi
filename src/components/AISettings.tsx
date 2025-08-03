@@ -61,7 +61,7 @@ export const AISettings: React.FC<AISettingsProps> = ({ onClose }) => {
       }
     } catch (error) {
       setConnectionStatus('error');
-      alert('❌ Connection test failed: ' + error.message);
+      alert('❌ Connection test failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setIsTestingConnection(false);
     }

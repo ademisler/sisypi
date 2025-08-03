@@ -208,7 +208,7 @@ Respond in JSON format:
       selector = `#${elementData.id}`;
       confidence = 90;
     } else if (elementData.className) {
-      const classes = elementData.className.split(' ').filter(c => c && !c.includes('sisypi'));
+      const classes = elementData.className.split(' ').filter((c: string) => c && !c.includes('sisypi'));
       if (classes.length > 0) {
         selector = `${elementData.tagName.toLowerCase()}.${classes.join('.')}`;
         confidence = 75;
