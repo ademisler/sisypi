@@ -3,10 +3,8 @@ import type {
   Scenario,
   ScenarioCollection,
   ViewType,
-  StatusMessage,
-  AppState as AppStateType,
 } from '../types';
-import { DEFAULTS, STORAGE_KEYS } from '../constants';
+import { DEFAULTS } from '../constants';
 import { generateId, formatStatusMessage, debounce } from '../utils';
 
 // === STATE TYPES ===

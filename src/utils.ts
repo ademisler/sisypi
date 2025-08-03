@@ -1,4 +1,4 @@
-import { AutomationStep, StepType, StatusMessage } from './types';
+import { AutomationStep, StatusMessage } from './types';
 import { STEP_CONFIGS, UI_TEXT } from './constants';
 
 /**

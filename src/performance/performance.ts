@@ -30,7 +30,9 @@ export class PerformanceManager {
     // Remove oldest entries if cache is full
     if (this.cache.size >= this.MAX_CACHE_SIZE) {
       const oldestKey = this.cache.keys().next().value;
-      this.cache.delete(oldestKey);
+      if (oldestKey !== undefined) {
+        this.cache.delete(oldestKey);
+      }
     }
 
     this.cache.set(key, {
@@ -482,7 +484,7 @@ export const performance_manager = PerformanceManager.getInstance();
 
 // === PERFORMANCE DECORATORS ===
 export function measurePerformance(metricName: string) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
+  return function (_target: any, _propertyName: string, descriptor: PropertyDescriptor) {
     const method = descriptor.value;
 
     descriptor.value = function (...args: any[]) {

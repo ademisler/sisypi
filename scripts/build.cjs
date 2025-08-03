@@ -67,6 +67,17 @@ async function build() {
     const distManifestPath = path.join(distDir, 'manifest.json');
     await fs.writeJson(distManifestPath, manifest, { spaces: 2 });
 
+    // 5. Fix popup.html paths for extension context
+    console.log('Fixing popup.html paths...');
+    const popupHtmlPath = path.join(distDir, 'popup.html');
+    if (fs.existsSync(popupHtmlPath)) {
+      let popupContent = await fs.readFile(popupHtmlPath, 'utf8');
+      // Convert absolute paths to relative paths for extension context
+      popupContent = popupContent.replace(/src="\/([^"]+)"/g, 'src="$1"');
+      popupContent = popupContent.replace(/href="\/([^"]+)"/g, 'href="$1"');
+      await fs.writeFile(popupHtmlPath, popupContent);
+    }
+
     console.log('\n✅ Extension build complete!');
     console.log(`Ready to be loaded from: ${distDir}`);
 

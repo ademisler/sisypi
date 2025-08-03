@@ -119,15 +119,28 @@ if (typeof window.sisypiMessageListener !== 'function') {
                         case 'tıkla':
                         case 'yaz':
                         case 'kopyala': {
+                            if (!interpolatedSelector) {
+                                throw new Error(`${step.tip} adımı için element seçici gerekli`);
+                            }
                             const element = await scenarioEngine.waitForElement(interpolatedSelector);
-                            if (step.tip === 'tıkla') element.click();
+                            if (step.tip === 'tıkla') {
+                                element.click();
+                                await scenarioEngine.wait(100); // Click sonrası kısa bekleme
+                            }
                             if (step.tip === 'yaz') {
+                                if (!step.metin && step.metin !== '') {
+                                    throw new Error('Yazma adımı için metin gerekli');
+                                }
+                                element.focus();
                                 element.value = scenarioEngine.interpolate(step.metin);
                                 element.dispatchEvent(new Event('input', { bubbles: true }));
+                                element.dispatchEvent(new Event('change', { bubbles: true }));
                             }
                             if (step.tip === 'kopyala') {
                                 const value = element.value !== undefined ? element.value : element.textContent;
-                                if (step.degisken) scenarioEngine.variables[step.degisken] = value.trim();
+                                if (step.degisken) {
+                                    scenarioEngine.variables[step.degisken] = value ? value.trim() : '';
+                                }
                             }
                             break;
                         }
@@ -135,9 +148,181 @@ if (typeof window.sisypiMessageListener !== 'function') {
                             await scenarioEngine.wait(parseInt(step.ms, 10) || 1000);
                             break;
                         case 'scroll':
-                            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                            if (interpolatedSelector) {
+                                const element = await scenarioEngine.waitForElement(interpolatedSelector);
+                                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            } else {
+                                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                            }
                             await scenarioEngine.wait(500);
                             break;
+                        case 'hover': {
+                            if (!interpolatedSelector) {
+                                throw new Error('Hover adımı için element seçici gerekli');
+                            }
+                            const element = await scenarioEngine.waitForElement(interpolatedSelector);
+                            const event = new MouseEvent('mouseover', { bubbles: true, cancelable: true });
+                            element.dispatchEvent(event);
+                            await scenarioEngine.wait(200);
+                            break;
+                        }
+                        case 'double_click': {
+                            if (!interpolatedSelector) {
+                                throw new Error('Çift tıklama adımı için element seçici gerekli');
+                            }
+                            const element = await scenarioEngine.waitForElement(interpolatedSelector);
+                            const event = new MouseEvent('dblclick', { bubbles: true, cancelable: true });
+                            element.dispatchEvent(event);
+                            await scenarioEngine.wait(200);
+                            break;
+                        }
+                        case 'right_click': {
+                            if (!interpolatedSelector) {
+                                throw new Error('Sağ tıklama adımı için element seçici gerekli');
+                            }
+                            const element = await scenarioEngine.waitForElement(interpolatedSelector);
+                            const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+                            element.dispatchEvent(event);
+                            await scenarioEngine.wait(200);
+                            break;
+                        }
+                        case 'focus': {
+                            if (!interpolatedSelector) {
+                                throw new Error('Focus adımı için element seçici gerekli');
+                            }
+                            const element = await scenarioEngine.waitForElement(interpolatedSelector);
+                            element.focus();
+                            await scenarioEngine.wait(100);
+                            break;
+                        }
+                        case 'blur': {
+                            if (!interpolatedSelector) {
+                                throw new Error('Blur adımı için element seçici gerekli');
+                            }
+                            const element = await scenarioEngine.waitForElement(interpolatedSelector);
+                            element.blur();
+                            await scenarioEngine.wait(100);
+                            break;
+                        }
+                        case 'clear': {
+                            if (!interpolatedSelector) {
+                                throw new Error('Temizleme adımı için element seçici gerekli');
+                            }
+                            const element = await scenarioEngine.waitForElement(interpolatedSelector);
+                            element.value = '';
+                            element.dispatchEvent(new Event('input', { bubbles: true }));
+                            element.dispatchEvent(new Event('change', { bubbles: true }));
+                            break;
+                        }
+                        case 'select_option': {
+                            if (!interpolatedSelector) {
+                                throw new Error('Seçenek seçimi için element seçici gerekli');
+                            }
+                            const element = await scenarioEngine.waitForElement(interpolatedSelector);
+                            if (element.tagName.toLowerCase() !== 'select') {
+                                throw new Error('Seçenek seçimi sadece select elementlerinde kullanılabilir');
+                            }
+                            const option = step.metin ? scenarioEngine.interpolate(step.metin) : '';
+                            element.value = option;
+                            element.dispatchEvent(new Event('change', { bubbles: true }));
+                            break;
+                        }
+                        case 'check':
+                        case 'uncheck': {
+                            if (!interpolatedSelector) {
+                                throw new Error('Checkbox işlemi için element seçici gerekli');
+                            }
+                            const element = await scenarioEngine.waitForElement(interpolatedSelector);
+                            if (element.type !== 'checkbox') {
+                                throw new Error('Bu işlem sadece checkbox elementlerinde kullanılabilir');
+                            }
+                            element.checked = step.tip === 'check';
+                            element.dispatchEvent(new Event('change', { bubbles: true }));
+                            break;
+                        }
+                        case 'press_key': {
+                            if (!step.metin) {
+                                throw new Error('Tuş basma adımı için tuş kodu gerekli');
+                            }
+                            const keyCode = step.metin.toLowerCase();
+                            const event = new KeyboardEvent('keydown', { key: keyCode, bubbles: true });
+                            if (interpolatedSelector) {
+                                const element = await scenarioEngine.waitForElement(interpolatedSelector);
+                                element.dispatchEvent(event);
+                            } else {
+                                document.dispatchEvent(event);
+                            }
+                            await scenarioEngine.wait(100);
+                            break;
+                        }
+                        case 'wait_for_element': {
+                            if (!interpolatedSelector) {
+                                throw new Error('Element bekleme adımı için seçici gerekli');
+                            }
+                            const timeout = parseInt(step.ms, 10) || 5000;
+                            await scenarioEngine.waitForElement(interpolatedSelector, timeout);
+                            break;
+                        }
+                        case 'wait_for_text': {
+                            if (!step.metin) {
+                                throw new Error('Metin bekleme adımı için metin gerekli');
+                            }
+                            const text = scenarioEngine.interpolate(step.metin);
+                            const timeout = parseInt(step.ms, 10) || 5000;
+                            const startTime = Date.now();
+                            while (Date.now() - startTime < timeout) {
+                                if (document.body.textContent.includes(text)) {
+                                    break;
+                                }
+                                await scenarioEngine.wait(100);
+                            }
+                            if (!document.body.textContent.includes(text)) {
+                                throw new Error(`Metin bulunamadı: ${text}`);
+                            }
+                            break;
+                        }
+                        case 'assert_text': {
+                            if (!step.metin) {
+                                throw new Error('Metin doğrulama adımı için metin gerekli');
+                            }
+                            const expectedText = scenarioEngine.interpolate(step.metin);
+                            let actualText = '';
+                            if (interpolatedSelector) {
+                                const element = await scenarioEngine.waitForElement(interpolatedSelector);
+                                actualText = element.textContent || element.value || '';
+                            } else {
+                                actualText = document.body.textContent;
+                            }
+                            if (!actualText.includes(expectedText)) {
+                                throw new Error(`Beklenen metin bulunamadı: "${expectedText}"`);
+                            }
+                            break;
+                        }
+                        case 'assert_element': {
+                            if (!interpolatedSelector) {
+                                throw new Error('Element doğrulama adımı için seçici gerekli');
+                            }
+                            const exists = scenarioEngine.elementExists(interpolatedSelector);
+                            if (!exists) {
+                                throw new Error(`Element bulunamadı: ${interpolatedSelector}`);
+                            }
+                            break;
+                        }
+                        case 'extract_attribute': {
+                            if (!interpolatedSelector) {
+                                throw new Error('Özellik çıkarma adımı için element seçici gerekli');
+                            }
+                            if (!step.metin) {
+                                throw new Error('Özellik çıkarma adımı için özellik adı gerekli');
+                            }
+                            const element = await scenarioEngine.waitForElement(interpolatedSelector);
+                            const attributeName = step.metin;
+                            const value = element.getAttribute(attributeName) || '';
+                            if (step.degisken) {
+                                scenarioEngine.variables[step.degisken] = value;
+                            }
+                            break;
+                        }
                         case 'comment':
                         case 'screenshot': // Screenshot logic is not implemented, just skip
                             break;
@@ -179,6 +364,15 @@ if (typeof window.sisypiMessageListener !== 'function') {
                             }
                             break;
                         }
+                        
+                        default:
+                            console.warn(`Scenario Engine: Unknown step type: ${step.tip}`);
+                            scenarioEngine.sendStatus({ 
+                                type: 'uyari', 
+                                messageKey: 'uyariGenel', 
+                                params: { adim: i + 1, mesaj: `Bilinmeyen adım türü: ${step.tip}` } 
+                            });
+                            break;
                     }
                 } catch (error) {
                     scenarioEngine.sendStatus({ type: 'hata', messageKey: 'hataGenel', params: { adim: i + 1, mesaj: error.message } });
@@ -198,7 +392,9 @@ if (typeof window.sisypiMessageListener !== 'function') {
     // --- GENEL MESAJ DİNLEYİCİSİ ---
     window.sisypiMessageListener = (request, sender, sendResponse) => {
         console.log("Content script received message:", request);
-        switch (request.action) {
+        
+        try {
+            switch (request.action) {
             // [GÜNCELLEME] Seçimi başlatan yeni komut
             case 'initiateSelection':
                 selectionMode.start();
@@ -233,6 +429,15 @@ if (typeof window.sisypiMessageListener !== 'function') {
                 scenarioEngine.run(request.steps);
                 sendResponse({success: true}); // Başlatma mesajını onayla
                 break;
+                
+            default:
+                console.warn(`Content Script: Unknown action: ${request.action}`);
+                sendResponse({ success: false, error: `Unknown action: ${request.action}` });
+                break;
+            }
+        } catch (error) {
+            console.error(`Content Script: Error handling ${request.action}:`, error);
+            sendResponse({ success: false, error: error.message });
         }
         return true; 
     };

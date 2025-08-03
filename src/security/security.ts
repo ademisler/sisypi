@@ -6,7 +6,7 @@ export class SecurityManager {
   private readonly DANGEROUS_PROTOCOLS = ['javascript:', 'data:', 'vbscript:', 'file:', 'about:'];
   private readonly MAX_INPUT_LENGTH = 10000;
   private readonly MAX_SELECTOR_LENGTH = 1000;
-  private readonly ALLOWED_TAGS = ['div', 'span', 'p', 'a', 'button', 'input', 'select', 'textarea', 'form', 'label'];
+
 
   private constructor() {}
 

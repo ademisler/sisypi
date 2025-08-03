@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { UI_TEXT } from '../constants';
 
 // === SECURITY & PERFORMANCE DASHBOARD ===
 interface SecurityDashboardProps {

@@ -5,7 +5,7 @@ import './popup/popup.css';
 // Import our new architecture components
 import { AppProvider, useApp } from './src/context/AppContext';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
-import type { AutomationStep, StepType } from './src/types';
+import type { AutomationStep, StepType, Scenario } from './src/types';
 import { UI_TEXT, APP_CONFIG, STEP_CONFIGS } from './src/constants';
 import { getStepDisplayInfo } from './src/utils';
 import { validateScenario } from './src/validation/validators';
@@ -568,7 +568,7 @@ interface StepItemProps {
 
 const StepItem: React.FC<StepItemProps> = ({
   step,
-  index,
+  index: _index,
   onEdit,
   onDelete,
   onMoveUp,

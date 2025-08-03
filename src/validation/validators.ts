@@ -1,5 +1,5 @@
 import type { AutomationStep, Scenario } from '../types';
-import { APP_CONFIG, STEP_CONFIGS, UI_TEXT } from '../constants';
+import { APP_CONFIG, STEP_CONFIGS } from '../constants';
 import { isValidSelector } from '../utils';
 
 // === VALIDATION RESULT TYPE ===

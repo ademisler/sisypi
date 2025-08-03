@@ -42,7 +42,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log("Background received message:", request);
     let isAsync = false;
 
-    switch (request.action) {
+    try {
+        switch (request.action) {
         case 'getInitialData':
             isAsync = true;
             loadInitialData().then(() => {
@@ -186,6 +187,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 sendResponse({ success: true, scenarios: request.data });
             });
             break;
+            
+        default:
+            console.warn(`Unknown action: ${request.action}`);
+            sendResponse({ success: false, error: `Unknown action: ${request.action}` });
+            break;
+        }
+    } catch (error) {
+        console.error(`Error handling ${request.action}:`, error);
+        sendResponse({ success: false, error: error.message });
     }
 
     return isAsync;
