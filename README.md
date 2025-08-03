@@ -51,13 +51,19 @@ This project is developed using modern web development tools: **Vite, React, and
     ```bash
     npm run build
     ```
-4.  **Load the Extension in Chrome:**
+4.  **Create a Zipped Package (Optional):** To easily share or install the extension, you can create a zip file.
+    ```bash
+    npm run zip
+    ```
+    This will create a `sisypi-extension.zip` file in the root directory.
+
+5.  **Load the Extension in Chrome:**
     *   Open your Chrome browser and navigate to `chrome://extensions`.
     *   Enable the **"Developer mode"** toggle in the top right corner.
-    *   Click the **"Load unpacked"** button.
-    *   Select the **`dist`** folder that was created by the build process.
+    *   To load the extension for development, click **"Load unpacked"** and select the **`dist`** folder.
+    *   To install from the zip file, you can drag and drop the `sisypi-extension.zip` file onto the extensions page.
 
-The Sisypi extension will now be installed and ready to use. If you make changes to the source code, you must run `npm run build` again and then click the "reload" icon on the extension's card in the `chrome://extensions` page.
+The Sisypi extension will now be installed and ready to use. If you make changes to the source code, you must run `npm run build` (or `npm run zip`) again and then click the "reload" icon on the extension's card in the `chrome://extensions` page.
 
 ## Usage
 

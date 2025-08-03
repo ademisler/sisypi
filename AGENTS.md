@@ -20,12 +20,16 @@ This is a Chrome browser extension built with a modern tech stack. The architect
 
 ## Build Process
 
-The project uses **Vite** to build the React popup.
+The project uses a custom Node.js script to manage the build process, which in turn uses Vite to build the React popup.
 
--   **Configuration File:** `vite.config.cjs`
--   **To build the project, you MUST run:** `npm run build`
+-   **Build Script:** `scripts/build.cjs`
+-   **Vite Configuration:** `vite.config.cjs`
 
-This command will compile the `index.tsx` and all related files and place the final, loadable extension into the `/dist` directory. The `/dist` directory is what you should load as an "unpacked extension" in Chrome for testing.
+**Key `npm` commands:**
+-   `npm run build`: This is the main command to build the extension. It cleans the `dist` folder, runs Vite, and copies all necessary static files, preparing the extension for loading.
+-   `npm run zip`: This command first runs the build process and then creates a `sisypi-extension.zip` file in the root directory, ready for distribution.
+
+The final, loadable extension is always located in the `/dist` directory.
 
 **IMPORTANT:** There have been significant, unresolvable issues with the `npm` environment in some sandboxes. The `npm install` command sometimes fails to create the `node_modules/.bin` directory, which prevents the `vite` command from being found. If you encounter build errors like `vite: not found`, this is likely the cause. This is an **environmental issue**, not a code issue.
 
