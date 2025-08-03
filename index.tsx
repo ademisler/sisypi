@@ -1,110 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { createRoot } from 'react-dom/client';
 import './popup/popup.css';
 
-// Import our new type system and utilities
-import type {
-  Scenario,
-  ScenarioCollection,
-  AutomationStep,
-  ViewType,
-  StatusMessage,
-  StepType,
-} from './src/types';
-import { UI_TEXT, APP_CONFIG, STEP_CONFIGS, DEFAULTS } from './src/constants';
-import {
-  generateId,
-  getStepDisplayInfo,
-  formatStatusMessage,
-  validateStep,
-  debounce,
-} from './src/utils';
+// Import our new architecture components
+import { AppProvider, useApp } from './src/context/AppContext';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
+import type { AutomationStep, StepType } from './src/types';
+import { UI_TEXT, APP_CONFIG, STEP_CONFIGS } from './src/constants';
+import { getStepDisplayInfo } from './src/utils';
+import { validateScenario } from './src/validation/validators';
 
 // === MAIN APP COMPONENT ===
 const App: React.FC = () => {
-  const [scenarios, setScenarios] = useState<ScenarioCollection>({});
-  const [view, setView] = useState<ViewType>('main');
-  const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
-  const [status, setStatus] = useState<{ message: string; type: string }>({ message: '', type: '' });
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Load initial data from background script
-  useEffect(() => {
-    chrome.runtime.sendMessage({ action: 'getInitialData' }, (response) => {
-      if (response?.scenarios) {
-        setScenarios(response.scenarios);
-      }
-    });
-
-    // Listen for status updates
-    const messageListener = (message: any) => {
-      if (message.action === 'updateRunStatus') {
-        const statusText = formatStatusMessage(message.status);
-        setStatus({
-          message: statusText,
-          type: message.status.type,
-        });
-      }
-    };
-
-    chrome.runtime.onMessage.addListener(messageListener);
-    return () => chrome.runtime.onMessage.removeListener(messageListener);
-  }, []);
-
-  // Save scenarios to storage
-  const saveScenarios = useCallback(
-    debounce((newScenarios: ScenarioCollection) => {
-      chrome.runtime.sendMessage({
-        action: 'saveScenarios',
-        scenarios: newScenarios,
-      });
-    }, 500),
-    []
-  );
-
-  const handleCreateScenario = () => {
-    const newId = generateId();
-    const newScenario: Scenario = {
-      id: newId,
-      title: DEFAULTS.SCENARIO.title,
-      urlRestriction: DEFAULTS.SCENARIO.urlRestriction,
-      steps: [],
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      isActive: true,
-    };
-
-    const updatedScenarios = { ...scenarios, [newId]: newScenario };
-    setScenarios(updatedScenarios);
-    setActiveScenarioId(newId);
-    setView('editor');
-    saveScenarios(updatedScenarios);
-  };
-
-  const handleEditScenario = (scenarioId: string) => {
-    setActiveScenarioId(scenarioId);
-    setView('editor');
-  };
-
-  const handleDeleteScenario = (scenarioId: string) => {
-    const { [scenarioId]: deleted, ...remaining } = scenarios;
-    setScenarios(remaining);
-    saveScenarios(remaining);
-  };
-
-  const handleRunScenario = (scenarioId: string) => {
-    setIsLoading(true);
-    chrome.runtime.sendMessage({
-      action: 'runScenario',
-      scenarioId,
-      allScenarios: scenarios,
-    });
-    setTimeout(() => setIsLoading(false), 1000);
-  };
-
-  const handleBackupAll = () => {
-    chrome.runtime.sendMessage({ action: 'backupAll' });
-  };
+  const { state, actions } = useApp();
 
   const handleLoadBackup = async () => {
     try {
@@ -119,82 +27,66 @@ const App: React.FC = () => {
         reader.onload = (event) => {
           try {
             const data = JSON.parse(event.target?.result as string);
-            chrome.runtime.sendMessage({
-              action: 'restoreFromBackup',
-              data,
-            }, (response) => {
-              if (response?.success) {
-                setScenarios(data);
-                setStatus({
-                  message: 'Scenarios restored successfully',
-                  type: 'success',
-                });
-              }
-            });
+            actions.restoreScenarios(data);
           } catch (error) {
-            setStatus({
-              message: 'Invalid backup file',
-              type: 'error',
-            });
+            actions.setError('Invalid backup file format');
           }
         };
         reader.readAsText(file);
       };
       input.click();
     } catch (error) {
-      setStatus({
-        message: 'Failed to load backup file',
-        type: 'error',
-      });
+      actions.setError('Failed to load backup file');
     }
   };
 
   return (
     <div className="app-container">
       <Header
-        view={view}
-        onBack={() => setView('main')}
-        onBackupAll={handleBackupAll}
+        view={state.currentView}
+        onBack={() => actions.setView('main')}
+        onBackupAll={actions.backupScenarios}
         onLoadBackup={handleLoadBackup}
       />
       
       <div className="app-content">
-        {status.message && (
-          <StatusBar message={status.message} type={status.type} />
+        {state.error && (
+          <ErrorMessage message={state.error} onDismiss={() => actions.setError(null)} />
         )}
         
-        {view === 'main' ? (
-          <MainView
-            scenarios={scenarios}
-            onCreateScenario={handleCreateScenario}
-            onEditScenario={handleEditScenario}
-            onDeleteScenario={handleDeleteScenario}
-            onRunScenario={handleRunScenario}
-            isLoading={isLoading}
-          />
+        {state.status.message && (
+          <StatusBar message={state.status.message} type={state.status.type} />
+        )}
+        
+        {state.currentView === 'main' ? (
+          <MainView />
         ) : (
-          <EditorView
-            scenario={activeScenarioId ? scenarios[activeScenarioId] : null}
-            onSave={(updatedScenario) => {
-              const updatedScenarios = {
-                ...scenarios,
-                [updatedScenario.id]: updatedScenario,
-              };
-              setScenarios(updatedScenarios);
-              saveScenarios(updatedScenarios);
-              setView('main');
-            }}
-            onCancel={() => setView('main')}
-          />
+          <EditorView />
         )}
       </div>
     </div>
   );
 };
 
+// === ERROR MESSAGE COMPONENT ===
+interface ErrorMessageProps {
+  message: string;
+  onDismiss: () => void;
+}
+
+const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, onDismiss }) => (
+  <div className="status-message status-error">
+    <i className="fa-solid fa-exclamation-circle"></i>
+    <span>{message}</span>
+    <button className="btn btn-sm btn-ghost" onClick={onDismiss} style={{ marginLeft: 'auto' }}>
+      <i className="fa-solid fa-times"></i>
+    </button>
+  </div>
+);
+
 // === HEADER COMPONENT ===
 interface HeaderProps {
-  view: ViewType;
+  view: string;
   onBack: () => void;
   onBackupAll: () => void;
   onLoadBackup: () => void;
@@ -277,24 +169,9 @@ const StatusBar: React.FC<StatusBarProps> = ({ message, type }) => {
 };
 
 // === MAIN VIEW COMPONENT ===
-interface MainViewProps {
-  scenarios: ScenarioCollection;
-  onCreateScenario: () => void;
-  onEditScenario: (id: string) => void;
-  onDeleteScenario: (id: string) => void;
-  onRunScenario: (id: string) => void;
-  isLoading: boolean;
-}
-
-const MainView: React.FC<MainViewProps> = ({
-  scenarios,
-  onCreateScenario,
-  onEditScenario,
-  onDeleteScenario,
-  onRunScenario,
-  isLoading,
-}) => {
-  const scenarioList = Object.values(scenarios);
+const MainView: React.FC = () => {
+  const { state, actions } = useApp();
+  const scenarioList = Object.values(state.scenarios);
 
   return (
     <div className="view-container">
@@ -302,7 +179,7 @@ const MainView: React.FC<MainViewProps> = ({
         <h2 style={{ margin: 0, fontSize: 'var(--font-size-xl)', fontWeight: 'var(--font-weight-semibold)' }}>
           {UI_TEXT.MAIN_TITLE}
         </h2>
-        <button className="btn btn-primary" onClick={onCreateScenario}>
+        <button className="btn btn-primary" onClick={actions.createScenario}>
           <i className="fa-solid fa-plus"></i>
           {UI_TEXT.CREATE_NEW_SCENARIO}
         </button>
@@ -314,7 +191,7 @@ const MainView: React.FC<MainViewProps> = ({
           title={UI_TEXT.NO_SCENARIOS}
           description={UI_TEXT.NO_SCENARIOS_DESCRIPTION}
           action={
-            <button className="btn btn-primary btn-lg" onClick={onCreateScenario}>
+            <button className="btn btn-primary btn-lg" onClick={actions.createScenario}>
               <i className="fa-solid fa-plus"></i>
               {UI_TEXT.CREATE_NEW_SCENARIO}
             </button>
@@ -326,10 +203,13 @@ const MainView: React.FC<MainViewProps> = ({
             <ScenarioCard
               key={scenario.id}
               scenario={scenario}
-              onEdit={() => onEditScenario(scenario.id)}
-              onDelete={() => onDeleteScenario(scenario.id)}
-              onRun={() => onRunScenario(scenario.id)}
-              isLoading={isLoading}
+              onEdit={() => {
+                actions.setActiveScenario(scenario.id);
+                actions.setView('editor');
+              }}
+              onDelete={() => actions.deleteScenario(scenario.id)}
+              onRun={() => actions.runScenario(scenario.id)}
+              isLoading={state.isLoading}
             />
           ))}
         </div>
@@ -411,38 +291,57 @@ const EmptyState: React.FC<EmptyStateProps> = ({ icon, title, description, actio
 );
 
 // === EDITOR VIEW COMPONENT ===
-interface EditorViewProps {
-  scenario: Scenario | null;
-  onSave: (scenario: Scenario) => void;
-  onCancel: () => void;
-}
+const EditorView: React.FC = () => {
+  const { state, actions } = useApp();
+  const scenario = state.activeScenarioId ? state.scenarios[state.activeScenarioId] : null;
+  
+  const [title, setTitle] = React.useState(scenario?.title || '');
+  const [urlRestriction, setUrlRestriction] = React.useState(scenario?.urlRestriction || '');
+  const [steps, setSteps] = React.useState<AutomationStep[]>(scenario?.steps || []);
+  const [isSelecting, setIsSelecting] = React.useState(false);
+  const [selectedElementNumber, setSelectedElementNumber] = React.useState('');
+  const [validationResult, setValidationResult] = React.useState<any>(null);
 
-const EditorView: React.FC<EditorViewProps> = ({ scenario, onSave, onCancel }) => {
-  const [title, setTitle] = useState(scenario?.title || DEFAULTS.SCENARIO.title);
-  const [urlRestriction, setUrlRestriction] = useState(scenario?.urlRestriction || '');
-  const [steps, setSteps] = useState<AutomationStep[]>(scenario?.steps || []);
-  const [isSelecting, setIsSelecting] = useState(false);
-  const [selectedElementNumber, setSelectedElementNumber] = useState('');
+  // Validate on changes
+  React.useEffect(() => {
+    if (scenario) {
+      const testScenario = {
+        ...scenario,
+        title: title.trim() || 'Untitled',
+        urlRestriction: urlRestriction.trim(),
+        steps,
+      };
+      const validation = validateScenario(testScenario);
+      setValidationResult(validation);
+    }
+  }, [title, urlRestriction, steps, scenario]);
 
   const handleSave = () => {
     if (!scenario) return;
 
-    const updatedScenario: Scenario = {
+    const updatedScenario = {
       ...scenario,
-      title: title.trim() || DEFAULTS.SCENARIO.title,
+      title: title.trim() || 'Untitled',
       urlRestriction: urlRestriction.trim(),
       steps,
       updatedAt: Date.now(),
     };
 
-    onSave(updatedScenario);
+    const validation = validateScenario(updatedScenario);
+    if (!validation.isValid) {
+      actions.setError(`Cannot save scenario: ${validation.errors[0]?.message}`);
+      return;
+    }
+
+    actions.updateScenario(updatedScenario);
+    actions.setView('main');
   };
 
   const handleAddToolboxStep = (stepType: StepType) => {
     const newStep: AutomationStep = {
       type: stepType,
-      ...(STEP_CONFIGS[stepType].hasDuration && { duration: DEFAULTS.STEP.duration }),
-      ...(STEP_CONFIGS[stepType].hasRepetitions && { repetitions: DEFAULTS.STEP.repetitions }),
+      ...(STEP_CONFIGS[stepType].hasDuration && { duration: 1000 }),
+      ...(STEP_CONFIGS[stepType].hasRepetitions && { repetitions: 1 }),
     };
 
     setSteps([...steps, newStep]);
@@ -575,11 +474,43 @@ const EditorView: React.FC<EditorViewProps> = ({ scenario, onSave, onCancel }) =
         <Toolbox onAddStep={handleAddToolboxStep} />
       </div>
 
+      {validationResult && !validationResult.isValid && (
+        <div className="validation-errors">
+          <div className="validation-title">
+            <i className="fa-solid fa-exclamation-triangle"></i>
+            Validation Errors
+          </div>
+          <ul className="validation-list">
+            {validationResult.errors.map((error: any, index: number) => (
+              <li key={index}>{error.message}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {validationResult && validationResult.warnings.length > 0 && (
+        <div className="validation-warnings">
+          <div className="validation-title">
+            <i className="fa-solid fa-exclamation-triangle"></i>
+            Warnings
+          </div>
+          <ul className="validation-list">
+            {validationResult.warnings.map((warning: any, index: number) => (
+              <li key={index}>{warning.message}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="card-footer">
-        <button className="btn" onClick={onCancel}>
+        <button className="btn" onClick={() => actions.setView('main')}>
           {UI_TEXT.CANCEL}
         </button>
-        <button className="btn btn-primary" onClick={handleSave}>
+        <button 
+          className="btn btn-primary" 
+          onClick={handleSave}
+          disabled={validationResult && !validationResult.isValid}
+        >
           {UI_TEXT.SAVE}
         </button>
       </div>
@@ -729,7 +660,11 @@ const container = document.getElementById('root');
 if (container) {
   createRoot(container).render(
     <React.StrictMode>
-      <App />
+      <ErrorBoundary>
+        <AppProvider>
+          <App />
+        </AppProvider>
+      </ErrorBoundary>
     </React.StrictMode>
   );
 }
