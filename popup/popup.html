@@ -1,112 +1,14 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sisypi</title>
-    <link rel="stylesheet" href="../lib/fontawesome/css/all.min.css">
-    <link rel="stylesheet" href="popup.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sisypi - Automation Assistant</title>
+  <link rel="stylesheet" href="/lib/fontawesome/css/all.min.css">
 </head>
 <body>
-    <div id="sisypi-konteyner">
-        <!-- ANA GÖRÜNÜM -->
-        <div id="ana-gorunum" style="display:flex; flex-direction:column; height: 100%;">
-            <div class="baslik">
-                <h1 data-lang="appTitle">Sisypi</h1>
-                <div class="buton-grup">
-                    <button id="dil-tr-btn" class="btn-ikincil dil-btn">TR</button>
-                    <button id="dil-en-btn" class="btn-ikincil dil-btn">EN</button>
-                </div>
-            </div>
-            <div class="icerik">
-                <button id="yeni-senaryo-btn" class="btn-birincil" style="width: 100%;" data-lang="yeniSenaryo"><i class="fa-solid fa-plus"></i>Yeni Senaryo Oluştur</button>
-                <div id="senaryo-listesi" style="margin-top: 20px;"></div>
-                 <div class="ana-gorunum-butonlari">
-                    <button id="yedekle-btn" class="btn-ikincil" data-lang="tumunuYedekle"><i class="fa-solid fa-download"></i> Tümünü Yedekle</button>
-                    <button id="geri-yukle-btn" class="btn-ikincil" data-lang="yedektenYukle"><i class="fa-solid fa-upload"></i> Yedekten Yükle</button>
-                    <input type="file" id="geri-yukle-input" accept=".json" style="display: none;">
-                </div>
-            </div>
-        </div>
-
-        <!-- DÜZENLEYİCİ GÖRÜNÜMÜ -->
-        <div id="editor-gorunumu" style="display: none; flex-direction: column; height: 100%;">
-            <div class="baslik">
-                <button id="ana-menuye-don-btn" class="btn-ikincil" data-lang="geri"><i class="fa-solid fa-arrow-left"></i> Geri</button>
-                <div class="buton-grup">
-                    <button id="senaryo-calistir-btn" class="btn-basari" data-lang="calistir"><i class="fa-solid fa-play"></i> Çalıştır</button>
-                    <button id="senaryo-kaydet-btn" class="btn-birincil" data-lang="kaydet"><i class="fa-solid fa-save"></i> Kaydet</button>
-                </div>
-            </div>
-            <div class="editor-icerik-alani">
-                <input type="text" id="senaryo-adi-input" class="input-alani" data-lang-placeholder="senaryoAdiPlaceholder">
-                <div>
-                    <label for="senaryo-url-input" class="input-etiketi" data-lang="urlKisitlamaEtiket">URL Kısıtlaması (İsteğe Bağlı)</label>
-                    <input type="text" id="senaryo-url-input" class="input-alani" data-lang-placeholder="urlKisitlamaPlaceholder">
-                </div>
-                <div id="adimlar-konteyner"></div>
-            </div>
-            <div class="editor-alt-bilgi">
-                <button id="adim-ekle-btn" class="btn-birincil" style="width: 100%;" data-lang="adimEkle"><i class="fa-solid fa-wand-magic-sparkles"></i> Element Seçerek Adım Ekle</button>
-                <div style="margin-top:15px; padding-top:15px; border-top: 1px dashed var(--border-color);">
-                    <h4 style="margin: 0 0 12px 0; font-size: 14px; text-align: center; color: #4b5563;" data-lang="aracKutusu"><i class="fa-solid fa-toolbox"></i> Araç Kutusu</h4>
-                    <div class="arac-kutusu-butonlari">
-                        <button class="btn-ikincil arac-btn" data-eylem="wait" data-lang="aracBekle"><i class="fa-solid fa-clock"></i> Bekle</button>
-                        <button class="btn-ikincil arac-btn" data-eylem="comment" data-lang="aracYorum"><i class="fa-solid fa-comment-dots"></i> Yorum</button>
-                        <button class="btn-ikincil arac-btn" data-eylem="screenshot" data-lang="aracGoruntu"><i class="fa-solid fa-camera"></i> Görüntü</button>
-                        <button class="btn-ikincil arac-btn" data-eylem="if_start" data-lang="aracEger"><b style="color:var(--block-color)">EĞER</b></button>
-                        <button class="btn-ikincil arac-btn" data-eylem="else_block" data-lang="aracDegilse"><b style="color:var(--block-color)">DEĞİLSE</b></button>
-                        <button class="btn-ikincil arac-btn" data-eylem="if_end" data-lang="aracEgerBitti"><b style="color:var(--block-color)">EĞER B.</b></button>
-                        <button class="btn-ikincil arac-btn" data-eylem="loop_start" data-lang="aracDongu"><i class="fa-solid fa-repeat"></i> N Kez</button>
-                        <button class="btn-ikincil arac-btn" data-eylem="loop_end" data-lang="aracDonguBitti"><b style="color:var(--block-color)">DÖNGÜ B.</b></button>
-                        <button class="btn-ikincil arac-btn" data-eylem="scroll" data-lang="aracKaydir"><i class="fa-solid fa-arrows-down-to-line"></i> Kaydır</button>
-                    </div>
-                </div>
-                 <div id="calistirma-durum-cubugu"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL PENCERE -->
-    <div id="eylem-modal-konteyner">
-        <div id="eylem-modal">
-            <h3 id="modal-baslik" data-lang="modalBaslik">Eylemi Yapılandır</h3>
-            <div>
-                <p style="font-size:14px; color: #4b5563; margin-top: 0;" data-lang="modalHedefElement">Hedef element:</p>
-                <code id="modal-secici-gosterim"></code>
-                <div id="modal-element-detaylari" style="font-size:12px; color:#6b7280; margin-top:5px; background-color:#f9fafb; padding:8px; border-radius:6px; white-space:pre-wrap; word-break:break-all;"></div>
-            </div>
-            <p style="margin-top: 20px;" data-lang="modalNeYapmakIstersin"><strong>Ne yapmak istersiniz?</strong></p>
-            <div id="eylem-secenekleri" style="display:flex; gap: 10px;"></div>
-            <div id="metin-parametre-alani" class="parametre-alani">
-                <label for="metin-input" data-lang="modalYazilacakMetin">Yazılacak Metin (Değişken için {{isim}} kullanın):</label>
-                <input type="text" id="metin-input" autocomplete="off">
-            </div>
-            <div id="degisken-parametre-alani" class="parametre-alani">
-                <label for="degisken-input" data-lang="modalDegiskeneKaydet">Kopyalanan değeri değişkene kaydet (isteğe bağlı):</label>
-                <input type="text" id="degisken-input" data-lang-placeholder="modalDegiskenPlaceholder" autocomplete="off">
-            </div>
-            <div class="modal-alt-bilgi" style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
-                <button id="modal-iptal-btn" class="btn-ikincil" data-lang="iptal">İptal</button>
-                <button id="modal-onayla-btn" class="btn-birincil" data-lang="adimiEkle">Adımı Ekle</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ELEMENT SEÇİM MODALI -->
-    <div id="element-secim-modal-konteyner" style="display: none;">
-        <div id="element-secim-modal">
-            <h3 data-lang="elementSecimBaslik">Element Seçimi</h3>
-            <p data-lang="elementSecimAciklama">Lütfen sayfada işaretlenen elementin numarasını girin:</p>
-            <input type="number" id="element-numarasi-input" class="input-alani" placeholder="Element Numarası">
-            <div class="modal-alt-bilgi" style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
-                <button id="element-secim-iptal-btn" class="btn-ikincil" data-lang="iptal">İptal</button>
-                <button id="element-secim-onayla-btn" class="btn-birincil" data-lang="sec">Seç</button>
-            </div>
-        </div>
-    </div>
-    
-    <script src="../lib/sortable.min.js"></script>
-    <script src="popup.js"></script>
+  <div id="root"></div>
+  <div id="modal-root"></div>
+  <script type="module" src="/index.tsx"></script>
 </body>
 </html>
