@@ -1,8 +1,32 @@
-# 🚀 Sisypi v2.0.0 - Büyük Güncelleme Yayınlandı! (FINAL)
+# 🚀 Sisypi v2.0.0 - AI-Powered Automation Assistant (FINAL)
 
 **Yayın Tarihi:** 3 Ağustos 2024  
-**Sürüm:** 2.0.0 (Final Release)  
+**Sürüm:** 2.0.0 (AI-Enhanced Final Release)  
 **Dosya:** `sisypi-automation-assistant-v2.0.0.zip`
+
+---
+
+## 🤖 AI-POWERED UPDATE - Revolutionary Element Selection (3 Ağustos 2024)
+
+### ✨ Yeni AI Özellikleri:
+- **🧠 AI-Powered Element Selection:** Artık numaralar yerine fareyle element seçimi
+- **🎯 Smart CSS Selectors:** AI otomatik olarak en güvenilir selector'ları üretir
+- **🔮 Automation Suggestions:** AI tam otomasyon workflow'ları önerir
+- **🛡️ Self-Healing Selectors:** AI alternative selector'lar ve fallback'ler sağlar
+- **⚡ Google Gemini Integration:** Ücretsiz Gemini API entegrasyonu
+
+### 🎯 AI Selection Sistemi:
+- **🖱️ Mouse-Based Selection:** Hover + click ile element seçimi
+- **🌈 Visual Feedback:** Mavi highlight hover, yeşil selection
+- **⌨️ ESC to Cancel:** Kolay iptal etme
+- **📊 Element Analysis:** Detaylı element data toplama
+- **🔄 Real-time Processing:** Anlık AI analizi
+
+### 🔧 Düzeltilen Kritik Sorunlar:
+- **🚨 runScenario Tab Error:** `sender.tab` undefined hatası düzeltildi
+- **🚨 Selection Numbers:** Eski numara sistemi kaldırıldı
+- **🚨 Enhanced Content Script:** Tüm yeni adım türleri senkronize edildi
+- **🚨 Background Script:** Aktif tab algılama iyileştirildi
 
 ---
 
