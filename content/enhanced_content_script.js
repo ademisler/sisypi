@@ -400,12 +400,56 @@
                     case 'screenshot':
                         await enhancedAutomationEngine.performScreenshot(step);
                         break;
+                    case 'hover':
+                        await enhancedAutomationEngine.performHover(step);
+                        break;
+                    case 'double_click':
+                        await enhancedAutomationEngine.performDoubleClick(step);
+                        break;
+                    case 'right_click':
+                        await enhancedAutomationEngine.performRightClick(step);
+                        break;
+                    case 'focus':
+                        await enhancedAutomationEngine.performFocus(step);
+                        break;
+                    case 'blur':
+                        await enhancedAutomationEngine.performBlur(step);
+                        break;
+                    case 'clear':
+                        await enhancedAutomationEngine.performClear(step);
+                        break;
+                    case 'select_option':
+                        await enhancedAutomationEngine.performSelectOption(step);
+                        break;
+                    case 'check':
+                    case 'uncheck':
+                        await enhancedAutomationEngine.performCheckbox(step);
+                        break;
+                    case 'press_key':
+                        await enhancedAutomationEngine.performPressKey(step);
+                        break;
+                    case 'wait_for_element':
+                        await enhancedAutomationEngine.performWaitForElement(step);
+                        break;
+                    case 'wait_for_text':
+                        await enhancedAutomationEngine.performWaitForText(step);
+                        break;
+                    case 'assert_text':
+                        await enhancedAutomationEngine.performAssertText(step);
+                        break;
+                    case 'assert_element':
+                        await enhancedAutomationEngine.performAssertElement(step);
+                        break;
+                    case 'extract_attribute':
+                        await enhancedAutomationEngine.performExtractAttribute(step);
+                        break;
                     case 'comment':
                         // Comments are just logged
                         console.log(`Comment: ${step.text || 'No comment'}`);
                         break;
                     default:
-                        throw new Error(`Unknown step type: ${step.type}`);
+                        console.warn(`Enhanced Engine: Unknown step type: ${step.type}`);
+                        break;
                 }
 
                 logEntry.status = 'completed';
@@ -464,6 +508,146 @@
         performScreenshot: async (step) => {
             // Placeholder for screenshot functionality
             await utils.takeScreenshot();
+        },
+
+        performHover: async (step) => {
+            const element = await enhancedAutomationEngine.waitForElement(step.selector);
+            const event = new MouseEvent('mouseover', { bubbles: true, cancelable: true });
+            element.dispatchEvent(event);
+            await new Promise(resolve => setTimeout(resolve, 200));
+        },
+
+        performDoubleClick: async (step) => {
+            const element = await enhancedAutomationEngine.waitForElement(step.selector);
+            const event = new MouseEvent('dblclick', { bubbles: true, cancelable: true });
+            element.dispatchEvent(event);
+            await new Promise(resolve => setTimeout(resolve, 200));
+        },
+
+        performRightClick: async (step) => {
+            const element = await enhancedAutomationEngine.waitForElement(step.selector);
+            const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+            element.dispatchEvent(event);
+            await new Promise(resolve => setTimeout(resolve, 200));
+        },
+
+        performFocus: async (step) => {
+            const element = await enhancedAutomationEngine.waitForElement(step.selector);
+            element.focus();
+            await new Promise(resolve => setTimeout(resolve, 100));
+        },
+
+        performBlur: async (step) => {
+            const element = await enhancedAutomationEngine.waitForElement(step.selector);
+            element.blur();
+            await new Promise(resolve => setTimeout(resolve, 100));
+        },
+
+        performClear: async (step) => {
+            const element = await enhancedAutomationEngine.waitForElement(step.selector);
+            element.value = '';
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+            element.dispatchEvent(new Event('change', { bubbles: true }));
+        },
+
+        performSelectOption: async (step) => {
+            const element = await enhancedAutomationEngine.waitForElement(step.selector);
+            if (element.tagName.toLowerCase() !== 'select') {
+                throw new Error('Select option can only be used on select elements');
+            }
+            const option = step.text ? enhancedAutomationEngine.interpolateVariables(step.text) : '';
+            element.value = option;
+            element.dispatchEvent(new Event('change', { bubbles: true }));
+        },
+
+        performCheckbox: async (step) => {
+            const element = await enhancedAutomationEngine.waitForElement(step.selector);
+            if (element.type !== 'checkbox') {
+                throw new Error('Checkbox operation can only be used on checkbox elements');
+            }
+            element.checked = step.type === 'check';
+            element.dispatchEvent(new Event('change', { bubbles: true }));
+        },
+
+        performPressKey: async (step) => {
+            if (!step.text) {
+                throw new Error('Press key step requires key code');
+            }
+            const keyCode = step.text.toLowerCase();
+            const event = new KeyboardEvent('keydown', { key: keyCode, bubbles: true });
+            if (step.selector) {
+                const element = await enhancedAutomationEngine.waitForElement(step.selector);
+                element.dispatchEvent(event);
+            } else {
+                document.dispatchEvent(event);
+            }
+            await new Promise(resolve => setTimeout(resolve, 100));
+        },
+
+        performWaitForElement: async (step) => {
+            if (!step.selector) {
+                throw new Error('Wait for element step requires selector');
+            }
+            const timeout = parseInt(step.duration) || 5000;
+            await enhancedAutomationEngine.waitForElement(step.selector, timeout);
+        },
+
+        performWaitForText: async (step) => {
+            if (!step.text) {
+                throw new Error('Wait for text step requires text');
+            }
+            const text = enhancedAutomationEngine.interpolateVariables(step.text);
+            const timeout = parseInt(step.duration) || 5000;
+            const startTime = Date.now();
+            while (Date.now() - startTime < timeout) {
+                if (document.body.textContent.includes(text)) {
+                    return;
+                }
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            throw new Error(`Text not found: ${text}`);
+        },
+
+        performAssertText: async (step) => {
+            if (!step.text) {
+                throw new Error('Assert text step requires text');
+            }
+            const expectedText = enhancedAutomationEngine.interpolateVariables(step.text);
+            let actualText = '';
+            if (step.selector) {
+                const element = await enhancedAutomationEngine.waitForElement(step.selector);
+                actualText = element.textContent || element.value || '';
+            } else {
+                actualText = document.body.textContent;
+            }
+            if (!actualText.includes(expectedText)) {
+                throw new Error(`Expected text not found: "${expectedText}"`);
+            }
+        },
+
+        performAssertElement: async (step) => {
+            if (!step.selector) {
+                throw new Error('Assert element step requires selector');
+            }
+            const exists = document.querySelector(step.selector) !== null;
+            if (!exists) {
+                throw new Error(`Element not found: ${step.selector}`);
+            }
+        },
+
+        performExtractAttribute: async (step) => {
+            if (!step.selector) {
+                throw new Error('Extract attribute step requires selector');
+            }
+            if (!step.text) {
+                throw new Error('Extract attribute step requires attribute name');
+            }
+            const element = await enhancedAutomationEngine.waitForElement(step.selector);
+            const attributeName = step.text;
+            const value = element.getAttribute(attributeName) || '';
+            if (step.variable) {
+                enhancedAutomationEngine.variables[step.variable] = value;
+            }
         },
 
         // Find matching control flow end
