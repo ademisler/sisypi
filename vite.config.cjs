@@ -3,11 +3,15 @@ const react = require('@vitejs/plugin-react');
 
 module.exports = defineConfig({
   plugins: [react()],
+  esbuild: {
+    drop: [], // Don't drop console.log
+  },
   build: {
     outDir: 'dist',
     emptyOutDir: false,
     sourcemap: true,
-    minify: false, // Disable minification to see what's happening
+    minify: false,
+    target: 'esnext',
     rollupOptions: {
       input: {
         popup: 'popup.html',
@@ -16,8 +20,10 @@ module.exports = defineConfig({
         entryFileNames: 'popup.js',
         chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
+        format: 'es',
       },
-      treeshake: false, // Disable tree-shaking
+      treeshake: false,
+      external: [],
     },
   },
   define: {

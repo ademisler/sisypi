@@ -18,6 +18,7 @@ interface AISettingsModalProps {
 }
 
 const AISettingsModal: React.FC<AISettingsModalProps> = ({ onClose }) => {
+  console.log('🤖 AI Settings Modal rendered!');
   const [apiKey, setApiKey] = React.useState('');
   const [isTestingConnection, setIsTestingConnection] = React.useState(false);
   const [connectionStatus, setConnectionStatus] = React.useState<'idle' | 'success' | 'error'>('idle');
@@ -218,9 +219,12 @@ const AISettingsModal: React.FC<AISettingsModalProps> = ({ onClose }) => {
 
 // === MAIN APP COMPONENT ===
 const App: React.FC = () => {
+  console.log('🚀 App component rendered!');
   const { state, actions } = useApp();
   const [showAISettings, setShowAISettings] = React.useState(false);
   const [isAIEnabled, setIsAIEnabled] = React.useState(false);
+  
+  console.log('AI Settings State:', { showAISettings, isAIEnabled });
 
   // Load AI settings on mount
   React.useEffect(() => {
@@ -317,7 +321,68 @@ const App: React.FC = () => {
       </div>
 
       {showAISettings && (
-        <AISettingsModal onClose={() => setShowAISettings(false)} />
+        <div className="modal-overlay" onClick={() => setShowAISettings(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>🤖 AI Settings</h3>
+              <button className="btn btn-ghost" onClick={() => setShowAISettings(false)}>
+                <i className="fa-solid fa-times"></i>
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="form-group">
+                <label>
+                  <input 
+                    type="checkbox" 
+                    checked={isAIEnabled}
+                    onChange={(e) => setIsAIEnabled(e.target.checked)}
+                  />
+                  Enable AI-Powered Features
+                </label>
+              </div>
+              
+              {isAIEnabled && (
+                <div className="form-group">
+                  <label>Google Gemini API Key:</label>
+                  <input 
+                    type="password" 
+                    placeholder="AIzaSyC... (Google Gemini API Key)"
+                    onChange={(e) => console.log('API Key input:', e.target.value)}
+                  />
+                  <small>
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank">
+                      🔗 Get free API key from Google AI Studio
+                    </a>
+                  </small>
+                  
+                  <button 
+                    className="btn btn-secondary"
+                    onClick={() => console.log('Test AI connection clicked')}
+                  >
+                    🧪 Test Connection
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn btn-ghost" onClick={() => setShowAISettings(false)}>
+                Cancel
+              </button>
+              <button 
+                className="btn btn-primary" 
+                onClick={() => {
+                  console.log('Save AI settings clicked');
+                  setShowAISettings(false);
+                }}
+              >
+                <i className="fa-solid fa-save"></i>
+                Save Settings
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -370,7 +435,10 @@ const Header: React.FC<HeaderProps> = ({ view, onBack, onBackupAll, onLoadBackup
           <button className="btn btn-ghost" onClick={onBackupAll} title={UI_TEXT.TOOLTIP_BACKUP}>
             <i className="fa-solid fa-download"></i>
           </button>
-          <button className="btn btn-ghost" onClick={onAISettings} title="AI Settings">
+          <button className="btn btn-ghost" onClick={() => {
+            console.log('⚙️ AI Settings button clicked!');
+            onAISettings();
+          }} title="AI Settings">
             <i className="fa-solid fa-cog"></i>
           </button>
         </>
@@ -986,6 +1054,10 @@ const Toolbox: React.FC<ToolboxProps> = ({ onAddStep }) => {
 };
 
 // === RENDER APP ===
+// Export to global scope for debugging
+(window as any).sisypiAISettings = AISettingsModal;
+console.log('🔧 Sisypi AI Settings exported to window.sisypiAISettings');
+
 const container = document.getElementById('root');
 if (container) {
   createRoot(container).render(
