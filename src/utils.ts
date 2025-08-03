@@ -82,97 +82,73 @@ export const validateStep = (step: AutomationStep): { isValid: boolean; errors: 
 };
 
 /**
- * Gets display information for a step
+ * Gets display information for a step (returns data for React components to render)
  */
 export const getStepDisplayInfo = (step: AutomationStep) => {
   const config = STEP_CONFIGS[step.type];
   if (!config) {
     return {
       icon: 'fa-solid fa-question-circle',
-      content: 'Unknown Step',
+      text: 'Unknown Step',
       color: 'var(--danger-color)',
+      selector: '',
+      variable: '',
+      hasSelector: false,
+      hasVariable: false,
     };
   }
   
-  let content: React.ReactNode;
-  const selector = step.selector ? <span className="value">{step.selector}</span> : '';
-  const text = step.text ? <span className="value">{step.text}</span> : '';
-  const variable = step.variable ? (
-    <>
-      <i className="fa-solid fa-arrow-right-long" style={{ margin: '0 6px' }} />
-      <span className="variable">{step.variable}</span>
-    </>
-  ) : '';
+  let text = '';
   
   switch (step.type) {
     case 'click':
-      content = (
-        <>
-          <b>{UI_TEXT.CLICK}:</b> {selector}
-        </>
-      );
+      text = `${UI_TEXT.CLICK}: ${step.selector || ''}`;
       break;
     case 'type':
-      content = (
-        <>
-          <b>{UI_TEXT.TYPE}</b> {text} into {selector}
-        </>
-      );
+      text = `${UI_TEXT.TYPE} "${step.text || ''}" into ${step.selector || ''}`;
       break;
     case 'copy':
-      content = (
-        <>
-          <b>Copy from:</b> {selector} {variable}
-        </>
-      );
+      text = `Copy from: ${step.selector || ''}`;
       break;
     case 'wait':
-      content = (
-        <>
-          <b>{UI_TEXT.WAIT}:</b> {step.duration || 1000}ms
-        </>
-      );
+      text = `${UI_TEXT.WAIT}: ${step.duration || 1000}ms`;
       break;
     case 'comment':
-      content = <i className="step-comment">{step.text || '...'}</i>;
+      text = step.text || '...';
       break;
     case 'screenshot':
-      content = <b>{UI_TEXT.SCREENSHOT}</b>;
+      text = UI_TEXT.SCREENSHOT;
       break;
     case 'scroll':
-      content = <b>{UI_TEXT.SCROLL}</b>;
+      text = UI_TEXT.SCROLL;
       break;
     case 'if_start':
-      content = (
-        <>
-          <b>{UI_TEXT.IF}</b> {selector} exists
-        </>
-      );
+      text = `${UI_TEXT.IF} ${step.selector || ''} exists`;
       break;
     case 'else_block':
-      content = <b>{UI_TEXT.ELSE}</b>;
+      text = UI_TEXT.ELSE;
       break;
     case 'if_end':
-      content = <b>{UI_TEXT.END_IF}</b>;
+      text = UI_TEXT.END_IF;
       break;
     case 'loop_start':
-      content = (
-        <>
-          <b>{UI_TEXT.LOOP}</b> {step.repetitions || 'N'} times
-        </>
-      );
+      text = `${UI_TEXT.LOOP} ${step.repetitions || 'N'} times`;
       break;
     case 'loop_end':
-      content = <b>{UI_TEXT.END_LOOP}</b>;
+      text = UI_TEXT.END_LOOP;
       break;
     default:
-      content = 'Unknown Step';
+      text = 'Unknown Step';
   }
   
   return {
     icon: config.icon,
-    content,
+    text,
     color: config.color,
+    selector: step.selector || '',
+    variable: step.variable || '',
+    hasSelector: !!step.selector,
+    hasVariable: !!step.variable,
   };
 };
 
