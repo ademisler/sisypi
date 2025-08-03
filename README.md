@@ -17,31 +17,47 @@ Sisypi offers a rich and flexible feature set for your web automation needs:
 *   **Variable Support:** Save values copied from the web page to named variables and use these variables for text inputs or other actions in subsequent steps (e.g., `{{username}}`). Makes your scenarios more generic and reusable.
 *   **URL Restriction:** Ensure scenarios only run on pages matching specific URL patterns, preventing accidental or unwanted execution on incorrect pages.
 *   **Scenario Management:** Easily create, edit, and delete your scenarios through an intuitive interface. You can back up all your scenarios as a single JSON file and restore them later.
-*   **Multi-Language Support:** The user interface supports Turkish and English languages.
 
 ## Architecture
 
 Sisypi operates using the core components of the Chrome extension architecture. These components are designed to fulfill different functions of the extension:
 
-*   **Popup (`popup/`):** The main interface that opens when the user clicks the extension icon. All user interactions, such as creating, editing, and managing scenarios, take place here.
+*   **Popup (`popup/` & `index.tsx`):** The main interface that opens when the user clicks the extension icon. The UI is built with **React and TypeScript** and compiled by Vite. All user interactions, such as creating, editing, and managing scenarios, take place here.
 *   **Background Script (`scripts/background.js`):** The "brain" of the extension. It listens for browser events, stores scenario data, and coordinates communication between the popup and content scripts.
-*   **Content Scripts (`content/content_script.js`, `content/selector_generator.js`):** Scripts injected directly into the web page. They access and interact with the web page's DOM. They enable element selection mode, execute scenario steps, and send status updates to the background script.
+*   **Content Scripts (`content/content_script.js`, `content/selector_generator.js`):** Scripts injected directly into the web page. They access and interact with the web page's DOM. They enable element selection mode, execute scenario steps (including complex control flow like IF/ELSE and LOOPs), and send status updates to the background script.
 *   **Web Accessible Resources (`content/selection.css`):** The CSS file injected into the web page during element selection mode.
 
-## Installation
+## Installation & Development
 
-Sisypi is a Chrome extension. Follow these steps to install and run it in your development environment:
+This project is developed using modern web development tools: **Vite, React, and TypeScript**.
 
-1.  **Clone the Repository:** Clone this GitHub repository to your computer or download it as a ZIP and extract it to your desired directory.
+### Required Tools
+
+*   [Node.js](https://nodejs.org/) (v18 or higher recommended)
+*   [npm](https://www.npmjs.com/) or [Yarn](https://yarnpkg.com/)
+
+### Setup and Running
+
+1.  **Clone the Repository:**
     ```bash
     git clone https://github.com/ademisler/sisypi.git
+    cd sisypi
     ```
-2.  **Open Chrome Extensions:** Open your Chrome browser and type `chrome://extensions` in the address bar.
-3.  **Enable Developer Mode:** Enable the "Developer mode" toggle in the top right corner.
-4.  **Load Unpacked Extension:** Click the "Load unpacked" button.
-5.  **Select Folder:** Select the `sisypi` folder you cloned or extracted.
+2.  **Install Dependencies:**
+    ```bash
+    npm install
+    ```
+3.  **Build the Extension:** This command compiles the React/TypeScript code and packages all necessary files into the `dist` directory.
+    ```bash
+    npm run build
+    ```
+4.  **Load the Extension in Chrome:**
+    *   Open your Chrome browser and navigate to `chrome://extensions`.
+    *   Enable the **"Developer mode"** toggle in the top right corner.
+    *   Click the **"Load unpacked"** button.
+    *   Select the **`dist`** folder that was created by the build process.
 
-Now the Sisypi extension will be installed and ready to use in your browser. You might want to pin the extension icon to your browser bar.
+The Sisypi extension will now be installed and ready to use. If you make changes to the source code, you must run `npm run build` again and then click the "reload" icon on the extension's card in the `chrome://extensions` page.
 
 ## Usage
 
@@ -87,39 +103,32 @@ This project is developed using modern web development tools: Vite and TypeScrip
 
 ## Project Structure
 
-This section describes the main directory structure of the project and the purpose of each folder/file. This structure makes it easier for developers to navigate and contribute to the project.
+This section describes the main directory structure of the project. The extension is built into the `dist/` directory, which is the directory you should load into Chrome as an unpacked extension.
 
 ```
 sisypi/
+├───dist/                   # The built, loadable extension
 ├───.git/                   # Git version control directory
 ├───.gitignore              # Files to be ignored by Git
-├───index.tsx               # Main React/TypeScript entry point (for Vite)
-├───manifest.json           # Chrome extension manifest file (extension settings)
-├───metadata.json           # Project metadata (likely for internal use)
+├───index.tsx               # Main React/TypeScript entry point for the popup
+├───manifest.json           # Chrome extension manifest file
 ├───package.json            # Node.js project dependencies and scripts
 ├───README.md               # This README file
 ├───tsconfig.json           # TypeScript configuration file
+├───vite.config.cjs         # Vite build configuration
 ├───content/
-│   ├───content_script.js   # Main content script injected into the web page
-│   ├───selection.css       # CSS styles for element selection mode
-│   └───selector_generator.js # Helper script for generating CSS selectors
+│   ├───content_script.js   # Injected into pages to run scenarios
+│   ├───selection.css       # CSS for the element selection overlay
+│   └───selector_generator.js # Helper to create CSS selectors
 ├───icons/
-│   ├───icon128.png         # Extension icons (in different sizes)
-│   ├───icon16.png
-│   └───icon48.png
-├───lib/                    # External libraries
-│   ├───sortable.min.js     # Library for drag-and-drop functionality
+│   └───icon*.png           # Extension icons
+├───lib/
 │   └───fontawesome/        # Font Awesome icon library
-│       ├───css/
-│       │   └───all.min.css
-│       └───webfonts/       # Font Awesome web fonts
 ├───popup/
-│   ├───popup.css           # CSS styles for the popup interface
-│   ├───popup.html          # HTML structure of the popup interface
-│   └───popup.js            # JavaScript logic for the popup interface
+│   ├───popup.css           # CSS styles for the React popup
+│   └───popup.html          # HTML root for the React popup
 └───scripts/
-    ├───background.js       # Extension's background service worker
-    └───content.js          # Old or redundant content script (not in use)
+    └───background.js       # Extension's background service worker
 ```
 
 ## Contributing

@@ -58,32 +58,13 @@ if (typeof window.sisypiMessageListener !== 'function') {
         }
     };
 
-    // --- SENARYO YÜRÜTME MOTORU ---
+    // --- SENARIO EXECUTION ENGINE ---
     const scenarioEngine = {
         isRunning: false,
         variables: {},
-
         wait: (ms) => new Promise(resolve => setTimeout(resolve, ms)),
-
-        waitForElement: (selector, timeout = 5000) => {
-            return new Promise((resolve, reject) => {
-                const startTime = Date.now();
-                const interval = setInterval(() => {
-                    const element = document.querySelector(selector);
-                    if (element) {
-                        clearInterval(interval);
-                        resolve(element);
-                    } else if (Date.now() - startTime > timeout) {
-                        clearInterval(interval);
-                        reject(new Error(`Element bulunamadı: ${selector}`));
-                    }
-                }, 100);
-            });
-        },
         
-        sendStatus: (status) => {
-            chrome.runtime.sendMessage({ action: 'updateRunStatus', status: status });
-        },
+        sendStatus: (status) => chrome.runtime.sendMessage({ action: 'updateRunStatus', status }),
 
         interpolate: (text) => {
             if (typeof text !== 'string') return text;
@@ -93,49 +74,118 @@ if (typeof window.sisypiMessageListener !== 'function') {
             });
         },
 
+        elementExists: (selector) => !!document.querySelector(selector),
+
+        waitForElement: (selector, timeout = 5000) => new Promise((resolve, reject) => {
+            const startTime = Date.now();
+            const interval = setInterval(() => {
+                const element = document.querySelector(selector);
+                if (element) {
+                    clearInterval(interval);
+                    resolve(element);
+                } else if (Date.now() - startTime > timeout) {
+                    clearInterval(interval);
+                    reject(new Error(`Element not found: ${selector}`));
+                }
+            }, 100);
+        }),
+
+        findMatchingEnd: (steps, startIndex, startType, endType) => {
+            let nestLevel = 1;
+            for (let i = startIndex + 1; i < steps.length; i++) {
+                if (steps[i].tip === startType) nestLevel++;
+                if (steps[i].tip === endType) nestLevel--;
+                if (nestLevel === 0) return i;
+            }
+            return steps.length - 1; // Should not happen with valid scenarios
+        },
+
         run: async (steps) => {
             if (scenarioEngine.isRunning) return;
             scenarioEngine.isRunning = true;
             scenarioEngine.variables = {};
             scenarioEngine.sendStatus({ type: 'calisiyor', messageKey: 'durumCalisiyor' });
 
-            for (let i = 0; i < steps.length; i++) {
+            const controlFlowStack = [];
+            let i = 0;
+
+            while (i < steps.length) {
                 if (!scenarioEngine.isRunning) break;
                 const step = steps[i];
                 try {
-                    let element;
-                    if (step.deger) {
-                        const selector = scenarioEngine.interpolate(step.deger);
-                        element = await scenarioEngine.waitForElement(selector);
-                    }
+                    const interpolatedSelector = step.deger ? scenarioEngine.interpolate(step.deger) : null;
 
                     switch (step.tip) {
                         case 'tıkla':
-                            element.click();
-                            break;
                         case 'yaz':
-                            element.value = scenarioEngine.interpolate(step.metin);
-                            element.dispatchEvent(new Event('input', { bubbles: true }));
-                            break;
-                        case 'kopyala':
-                            const value = element.value !== undefined ? element.value : element.textContent;
-                            if (step.degisken) {
-                                scenarioEngine.variables[step.degisken] = value.trim();
+                        case 'kopyala': {
+                            const element = await scenarioEngine.waitForElement(interpolatedSelector);
+                            if (step.tip === 'tıkla') element.click();
+                            if (step.tip === 'yaz') {
+                                element.value = scenarioEngine.interpolate(step.metin);
+                                element.dispatchEvent(new Event('input', { bubbles: true }));
+                            }
+                            if (step.tip === 'kopyala') {
+                                const value = element.value !== undefined ? element.value : element.textContent;
+                                if (step.degisken) scenarioEngine.variables[step.degisken] = value.trim();
                             }
                             break;
+                        }
                         case 'wait':
                             await scenarioEngine.wait(parseInt(step.ms, 10) || 1000);
                             break;
                         case 'scroll':
                             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-                            await scenarioEngine.wait(500); // Kaydırmanın bitmesi için bekle
+                            await scenarioEngine.wait(500);
                             break;
+                        case 'comment':
+                        case 'screenshot': // Screenshot logic is not implemented, just skip
+                            break;
+
+                        // --- CONTROL FLOW ---
+                        case 'if_start': {
+                            const condition = scenarioEngine.elementExists(interpolatedSelector);
+                            controlFlowStack.push({ type: 'if', condition });
+                            if (!condition) {
+                                i = scenarioEngine.findMatchingEnd(steps, i, 'if_start', 'if_end');
+                            }
+                            break;
+                        }
+                        case 'else_block': {
+                            const ifState = controlFlowStack[controlFlowStack.length - 1];
+                            if (ifState && ifState.type === 'if' && ifState.condition) {
+                                i = scenarioEngine.findMatchingEnd(steps, i, 'if_start', 'if_end');
+                            }
+                            break;
+                        }
+                        case 'if_end':
+                            controlFlowStack.pop();
+                            break;
+
+                        case 'loop_start': {
+                            const repetitions = parseInt(scenarioEngine.interpolate(step.sayi), 10) || 0;
+                            controlFlowStack.push({ type: 'loop', count: repetitions, start: i, current: 0 });
+                            break;
+                        }
+                        case 'loop_end': {
+                            const loopState = controlFlowStack[controlFlowStack.length - 1];
+                            if (loopState && loopState.type === 'loop') {
+                                loopState.current++;
+                                if (loopState.current < loopState.count) {
+                                    i = loopState.start; // Jump back to loop_start
+                                } else {
+                                    controlFlowStack.pop(); // End of loop
+                                }
+                            }
+                            break;
+                        }
                     }
                 } catch (error) {
                     scenarioEngine.sendStatus({ type: 'hata', messageKey: 'hataGenel', params: { adim: i + 1, mesaj: error.message } });
                     scenarioEngine.isRunning = false;
                     return;
                 }
+                i++;
             }
 
             if (scenarioEngine.isRunning) {

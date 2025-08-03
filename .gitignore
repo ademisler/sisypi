@@ -1,3 +1,19 @@
+# Dependencies
+/node_modules
+
+# Build artifacts
+/dist
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
 # Ignore macOS metadata
 .DS_Store
 sisypi-extension/icons/.DS_Store
