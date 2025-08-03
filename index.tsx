@@ -5,14 +5,28 @@ import './popup/popup.css';
 // Import our new architecture components
 import { AppProvider, useApp } from './src/context/AppContext';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { AISettings } from './src/components/AISettings';
 import type { AutomationStep, StepType, Scenario } from './src/types';
 import { UI_TEXT, APP_CONFIG, STEP_CONFIGS } from './src/constants';
 import { getStepDisplayInfo } from './src/utils';
 import { validateScenario } from './src/validation/validators';
+import { aiService } from './src/services/ai-service';
 
 // === MAIN APP COMPONENT ===
 const App: React.FC = () => {
   const { state, actions } = useApp();
+  const [showAISettings, setShowAISettings] = React.useState(false);
+  const [isAIEnabled, setIsAIEnabled] = React.useState(false);
+
+  // Load AI settings on mount
+  React.useEffect(() => {
+    chrome.storage.local.get(['aiEnabled', 'aiApiKey']).then((result) => {
+      setIsAIEnabled(result.aiEnabled || false);
+      if (result.aiApiKey) {
+        aiService.setApiKey(result.aiApiKey);
+      }
+    });
+  }, []);
 
   const handleLoadBackup = async () => {
     try {
@@ -40,6 +54,38 @@ const App: React.FC = () => {
     }
   };
 
+  const handleAISelection = async () => {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab.id) {
+        actions.setError('No active tab found');
+        return;
+      }
+
+      // Start AI selection
+      await chrome.tabs.sendMessage(tab.id, { action: 'startAISelection' });
+      
+      // Listen for AI element selection
+      const handleAIElementSelected = (message: any) => {
+        if (message.action === 'aiElementSelected') {
+          console.log('AI Element Selected:', message.elementData);
+          
+          // Here you can process the AI-selected element
+          // For now, we'll just show it in console
+          actions.setStatus('AI element selected successfully', 'success');
+          
+          // Remove listener
+          chrome.runtime.onMessage.removeListener(handleAIElementSelected);
+        }
+      };
+
+      chrome.runtime.onMessage.addListener(handleAIElementSelected);
+      
+    } catch (error) {
+      actions.setError('Failed to start AI selection');
+    }
+  };
+
   return (
     <div className="app-container">
       <Header
@@ -47,6 +93,9 @@ const App: React.FC = () => {
         onBack={() => actions.setView('main')}
         onBackupAll={actions.backupScenarios}
         onLoadBackup={handleLoadBackup}
+        onAISettings={() => setShowAISettings(true)}
+        onAISelection={handleAISelection}
+        isAIEnabled={isAIEnabled}
       />
       
       <div className="app-content">
@@ -64,6 +113,10 @@ const App: React.FC = () => {
           <EditorView />
         )}
       </div>
+
+      {showAISettings && (
+        <AISettings onClose={() => setShowAISettings(false)} />
+      )}
     </div>
   );
 };
@@ -90,9 +143,12 @@ interface HeaderProps {
   onBack: () => void;
   onBackupAll: () => void;
   onLoadBackup: () => void;
+  onAISettings?: () => void;
+  onAISelection?: () => void;
+  isAIEnabled?: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ view, onBack, onBackupAll, onLoadBackup }) => (
+const Header: React.FC<HeaderProps> = ({ view, onBack, onBackupAll, onLoadBackup, onAISettings, onAISelection, isAIEnabled }) => (
   <header className="app-header">
     <h1>
       {view === 'main' ? UI_TEXT.MAIN_TITLE : UI_TEXT.EDITOR_TITLE}
@@ -100,12 +156,23 @@ const Header: React.FC<HeaderProps> = ({ view, onBack, onBackupAll, onLoadBackup
     <div className="header-actions">
       {view === 'main' ? (
         <>
+          {isAIEnabled && onAISelection && (
+            <button className="btn btn-primary" onClick={onAISelection} title="AI Element Selection">
+              <i className="fa-solid fa-brain"></i>
+              AI Select
+            </button>
+          )}
           <button className="btn btn-ghost" onClick={onLoadBackup} title={UI_TEXT.TOOLTIP_RESTORE}>
             <i className="fa-solid fa-upload"></i>
           </button>
           <button className="btn btn-ghost" onClick={onBackupAll} title={UI_TEXT.TOOLTIP_BACKUP}>
             <i className="fa-solid fa-download"></i>
           </button>
+          {onAISettings && (
+            <button className="btn btn-ghost" onClick={onAISettings} title="AI Settings">
+              <i className="fa-solid fa-robot"></i>
+            </button>
+          )}
         </>
       ) : (
         <button className="btn btn-ghost" onClick={onBack}>

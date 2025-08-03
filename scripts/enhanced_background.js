@@ -351,7 +351,12 @@ const handleMessage = async (request, sender, sendResponse) => {
         break;
 
       case 'runScenario':
-        await runScenario(request.scenarioId, request.allScenarios, sender.tab);
+        // Get active tab if sender.tab is not available (popup case)
+        const tab = sender.tab || (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
+        if (!tab) {
+          throw new Error('No active tab found');
+        }
+        await runScenario(request.scenarioId, request.allScenarios, tab);
         sendResponse({ success: true });
         break;
 
