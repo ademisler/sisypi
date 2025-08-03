@@ -1,8 +1,27 @@
-# 🚀 Sisypi v2.0.0 - Büyük Güncelleme Yayınlandı!
+# 🚀 Sisypi v2.0.0 - Büyük Güncelleme Yayınlandı! (HOTFIX)
 
-**Yayın Tarihi:** 19 Aralık 2024  
-**Sürüm:** 2.0.0  
+**Yayın Tarihi:** 3 Ağustos 2024  
+**Sürüm:** 2.0.0 (Hotfix)  
 **Dosya:** `sisypi-automation-assistant-v2.0.0.zip`
+
+---
+
+## 🔧 HOTFIX - Kritik Düzeltmeler (3 Ağustos 2024)
+
+### ✅ Düzeltilen Kritik Sorunlar:
+- **🚨 Popup Dosya Konumu:** `popup.html` dosyası ana dizine taşındı
+- **🚨 Content Scripts Eksikliği:** Manifest'e content_scripts bölümü eklendi
+- **🚨 Host Permissions:** Gerekli `<all_urls>` izni eklendi
+- **🚨 Popup Boyutlandırma:** 400x600px boyut ve CSS düzeltmeleri
+- **🚨 Build Sistemi:** Vite konfigürasyonu ve dosya yolları düzeltildi
+- **🚨 Bağımlılık Sorunları:** Tüm npm bağımlılıkları güncellendi
+
+### 🎯 Eklenti Artık Tamamen Çalışır Durumda:
+- ✅ Chrome Extension Store standartlarına uygun
+- ✅ Manifest V3 tam uyumluluğu
+- ✅ Popup doğru boyutlarda açılıyor
+- ✅ Content script'ler web sayfalarında çalışıyor
+- ✅ Build sistemi sorunsuz çalışıyor
 
 ---
 
